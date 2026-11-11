@@ -17,3 +17,5 @@
 # local tool state (machine-specific; not for the public repo)
 /.idea/
 /.codex/
+# local agent scratch (worktrees, plans) — not for the public repo
+/.opencode/
