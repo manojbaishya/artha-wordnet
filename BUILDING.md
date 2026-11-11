@@ -40,12 +40,31 @@ The generated manifest is committed; `--check` is the drift guard.
   `PATH=/usr/bin:$PATH xmake ...` or pass `xmake f --ld=/usr/bin/ld --as=/usr/bin/as --ar=/usr/bin/ar`.
   (A host quirk, deliberately not baked into `xmake.lua`.)
 
+## Verified on this machine (2026-11-11)
+
+Read-only `pkg-config --modversion` queries on the machine this tree was
+verified on. Informational only — `deps.json` remains the sole source of
+pinned floors/versions; never script dependency logic against this block.
+
+    glib-2.0 2.72.4   gmodule-2.0 2.72.4   gtk+-2.0 2.24.33
+    dbus-1 1.12.20    dbus-glib-1 0.112    x11 1.7.5
+    wordnet-dev 1:3.0-37 (libwordnet-3.0.so, /usr/include/wn.h, no .pc)
+    xmake 3.1.2       GNU ld 2.47.20260726
+    libenchant-2: not installed (runtime dlopen; Artha runs fine)
+    libnotify: not installed (runtime dlopen; Artha runs fine)
+
 ## Build
 
 ```sh
 xmake                 # configures and builds into ./sandbox
 xmake f -m debug && xmake   # debug build
+xmake f --debug=verbose && xmake   # wni debug output (DEBUG_LEVEL=3)
 ```
+
+`--debug` takes `no|yes|messages|verbose` (default `no`) and maps to
+`DEBUG_LEVEL` 0|1|2|3, enabling `G_DEBUG`, `G_MESSAGE` and `G_PRINTF` in
+`src/wni.h` / `src/wni.c`. It affects the `wni` diagnostics only; it does
+not change optimization.
 
 Artifacts (objects and the binary) stay inside the gitignored `sandbox/`
 directory of the project root:

@@ -35,7 +35,7 @@
 
 G_BEGIN_DECLS
 
-#ifdef WNI_INDEPENDENT_DEBUG
+#ifdef DEBUG_LEVEL
 
 #	if DEBUG_LEVEL >= 1
 #		define G_DEBUG(...) g_debug(__VA_ARGS__)
@@ -50,7 +50,7 @@ G_BEGIN_DECLS
 #		define G_PRINTF(...) g_printf(__VA_ARGS__)
 #	endif		/* DEBUG_LEVEL >= 3 */
 
-#endif		/* WNI_INDEPENDENT_DEBUG */
+#endif		/* DEBUG_LEVEL */
 
 #ifndef __noop
 #define __noop(...) ((void) 0)

@@ -57,6 +57,15 @@ option("prefix")
     set_showmenu(true)
     set_description("Install prefix (APP_DIR=<prefix>/share/artha, ICON_DIR=<prefix>/share/pixmaps)")
 
+-- Replaces the old --enable-debug configure switch. The value maps to
+-- DEBUG_LEVEL, consumed by src/wni.h (G_DEBUG/G_MESSAGE/G_PRINTF) and
+-- src/wni.c (#if DEBUG_LEVEL > 2). Default keeps debug output off.
+option("debug")
+    set_default("no")
+    set_showmenu(true)
+    set_values("no", "yes", "messages", "verbose")
+    set_description("Debug output level (no|yes|messages|verbose -> DEBUG_LEVEL 0|1|2|3)")
+
 -- NB: during the very first `xmake f`, get_config() may not see the
 -- cached option yet; fall back to the option's default.
 local prefix = get_config("prefix") or "/usr/local"
@@ -87,6 +96,12 @@ local common_defines = {
     'APP_DIR="' .. app_dir .. '"',
     'ICON_DIR="' .. icon_dir .. '"',
 }
+
+-- NB: same first-configure caveat as `prefix` above; "no" is the default.
+local debug_level = ({ yes = 1, messages = 2, verbose = 3 })[get_config("debug") or "no"]
+if debug_level then
+    table.insert(common_defines, "DEBUG_LEVEL=" .. debug_level)
+end
 
 -- Dependency minimums are single-sourced in deps.json (repo root); the
 -- flatpak manifest generator reads the same file. `import` is not
@@ -120,40 +135,116 @@ local function version_ge(version, minimum)
     return true
 end
 
+-- Shared pkg-config resolution for the on_load handlers. Read-only
+-- queries (pkg-config --cflags/--libs/--modversion); nothing is
+-- downloaded, installed or modified. Floors come from deps.json
+-- (`pc_minimum`), the same file the flatpak manifest generator reads —
+-- no version list is duplicated here.
+-- NB: this helper is defined at root scope, where xmake exposes only a
+-- restricted set of globals (no `raise`/`assert`/`import`); signal
+-- failure with (nil, err) and raise from inside the on_load closure.
+local function resolve_pkgconfig(import_fn, packages)
+    local pkgconfig = import_fn("lib.detect.pkgconfig")
+    local collected = { defines = {}, cxflags = {}, ldflags = {},
+                        includedirs = {}, linkdirs = {}, links = {} }
+    for _, name in ipairs(packages) do
+        local info = pkgconfig.libinfo(name)
+        if not info then
+            return nil, table.concat({
+                "pkg-config: package '" .. name .. "' not found.",
+                "Install its development package (e.g. apt install <name>-dev / wordnet-dev),",
+                "then re-run `xmake f`. Nothing is downloaded automatically.",
+            }, "\n")
+        end
+        local min = pc_minimum(import_fn)[name]
+        if min and not version_ge(info.version, min) then
+            return nil, string.format("package '%s' >= %s required (found %s)",
+                name, min, tostring(info.version))
+        end
+        for _, v in ipairs(info.includedirs or {}) do table.insert(collected.includedirs, v) end
+        for _, v in ipairs(info.defines or {})     do table.insert(collected.defines, v) end
+        for _, v in ipairs(info.cxflags or {})     do table.insert(collected.cxflags, v) end
+        for _, v in ipairs(info.linkdirs or {})    do table.insert(collected.linkdirs, v) end
+        for _, v in ipairs(info.links or {})       do table.insert(collected.links, v) end
+        for _, v in ipairs(info.ldflags or {})     do table.insert(collected.ldflags, v) end
+    end
+    return collected
+end
+
+local function apply_pkgconfig(target, resolved)
+    if #resolved.includedirs > 0 then target:add("includedirs", resolved.includedirs) end
+    for _, v in ipairs(resolved.defines)     do target:add("defines", v) end
+    for _, v in ipairs(resolved.cxflags)     do target:add("cxflags", v) end
+    for _, v in ipairs(resolved.linkdirs)    do target:add("linkdirs", v) end
+    for _, v in ipairs(resolved.links)       do target:add("syslinks", v) end
+    for _, v in ipairs(resolved.ldflags)     do target:add("ldflags", v) end
+end
+
 -- Build an on_load handler that resolves pkg-config packages.
 -- Root scope cannot import modules or run commands, so the metadata
 -- lookup runs lazily inside the target's on_load callback.
--- Queries are read-only (pkg-config --cflags/--libs/--modversion);
--- nothing is downloaded, installed or modified.
---
 -- spec.packages: list of pkg-config package names (all must exist).
--- Floors come from deps.json (`pc_minimum`), the same file the flatpak
--- manifest generator reads — no version list is duplicated here.
 -- spec.defines:  optional extra defines to add
 local function pkgconfig_on_load(spec)
     return function (target)
-        import("lib.detect.pkgconfig")
-
-        for _, name in ipairs(spec.packages) do
-            local info = pkgconfig.libinfo(name)
-            if not info then
-                raise([[pkg-config: package '%s' not found.
-Install its development package (e.g. apt install <name>-dev / wordnet-dev),
-then re-run `xmake f`. Nothing is downloaded automatically.]], name)
-            end
-            local min = pc_minimum(import)[name]
-            if min then
-                assert(version_ge(info.version, min),
-                    string.format("package '%s' >= %s required (found %s)", name, min, tostring(info.version)))
-            end
-            target:add("includedirs", info.includedirs or {})
-            if info.defines then target:add("defines", info.defines) end
-            if info.cxflags then target:add("cxflags", info.cxflags) end
-            if info.linkdirs then target:add("linkdirs", info.linkdirs) end
-            if info.links then target:add("syslinks", info.links) end
-            if info.ldflags then target:add("ldflags", info.ldflags) end
-        end
+        local import_fn = import
+        local resolved, err = resolve_pkgconfig(import_fn, spec.packages)
+        if not resolved then raise(err) end
+        apply_pkgconfig(target, resolved)
         if spec.defines then target:add("defines", spec.defines) end
+    end
+end
+
+-- POSIX on_load: pkg-config resolution plus the configure-time probes the
+-- old build script performed (wordnet header, X11 headers, wordnet
+-- library name). Failures stop the configure with a clear message
+-- instead of a raw compiler/linker error deep into the build.
+local function posix_on_load(spec)
+    return function (target)
+        local import_fn = import
+        local resolved, err = resolve_pkgconfig(import_fn, spec.packages)
+        if not resolved then raise(err) end
+        apply_pkgconfig(target, resolved)
+        if spec.defines then target:add("defines", spec.defines) end
+
+        local has_cincludes = import_fn("lib.detect.has_cincludes")
+        local check_csnippets = import_fn("lib.detect.check_csnippets")
+
+        -- wordnet development header (wn.h) — hard error if missing
+        if not has_cincludes("wn.h") then
+            raise([[wordnet development headers (wn.h) not found.
+Install wordnet-dev (Debian/Ubuntu), then re-run `xmake f`.
+Nothing is downloaded automatically.]])
+        end
+
+        -- X11 headers — global hotkeys are a core feature; hard error
+        -- (as the old configure did) instead of silently building without.
+        if not has_cincludes({"X11/Xlib.h", "X11/Xatom.h"}) then
+            raise([[X11 development headers (X11/Xlib.h, X11/Xatom.h) not found.
+Install libx11-dev (Debian/Ubuntu), then re-run `xmake f`.]])
+        end
+
+        -- wordnet library name. Distros ship libwordnet, but a from-source
+        -- build of WordNet 3.x installs libWN/libwn; probe in the order
+        -- the old configure did and use the one providing `wninit`.
+        local candidates = {"wordnet", "WN", "wn", "WordNet", "WORDNET"}
+        local found = nil
+        for _, lib in ipairs(candidates) do
+            if check_csnippets({wordnet_lib_probe = ""}, {
+                includes = "wn.h",
+                funcs = {"wninit"},
+                configs = {links = {lib}},
+            }) then
+                found = lib
+                break
+            end
+        end
+        if not found then
+            raise([[wordnet library not found (tried: wordnet, WN, wn, WordNet, WORDNET).
+No candidate provides the symbol 'wninit'. Install wordnet-dev
+(Debian/Ubuntu) or WordNet 3.x from source, then re-run `xmake f`.]])
+        end
+        target:add("syslinks", found)
     end
 end
 
@@ -207,11 +298,10 @@ target("artha")
         add_defines("DBUS_AVAILABLE", "X11_AVAILABLE")
         -- system libraries stay dynamic; never downloaded, never replaced
         add_syslinks("X11", "dbus-1", "dbus-glib-1")
-        -- WordNet has no pkg-config file on common distros; -lwordnet is
-        -- the link this project has always used. Static or shared flavour
-        -- is the system's choice; the system is untouched.
-        add_syslinks("wordnet")
-        on_load(pkgconfig_on_load({
+        -- WordNet has no pkg-config file on common distros; the library
+        -- name is probed at configure time (libwordnet on distros,
+        -- libWN/libwn from a source build) in posix_on_load below.
+        on_load(posix_on_load({
             packages = {"glib-2.0", "gmodule-2.0", "gtk+-2.0", "dbus-1", "dbus-glib-1", "x11"},
         }))
     end
