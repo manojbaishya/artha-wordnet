@@ -117,8 +117,10 @@ permission. Notes:
   (`-Wno-incompatible-pointer-types`, `-Wno-implicit-int`) because the
   SDK's gcc defaults to gnu23 / gcc-14 diagnostics and this pre-C23
   codebase does not compile under them. No source was patched.
-- Export naming: both the desktop file and the icon are installed as
-  `org.artha.Artha.*` so flatpak exports them; `Exec=artha` still works.
+- Export naming: the desktop file is installed as `org.artha.Artha.desktop`
+  and the icon lives at `share/icons/hicolor/128x128/apps/org.artha.Artha.png`
+  (`share/pixmaps` is not exported by this flatpak-builder); `Exec=artha`
+  still works.
 - The flatpak is NOT published anywhere and is not ready for flathub:
   no metainfo file, no repo hosting, sources are a local `type: dir`.
   Slimming (`cleanup: /lib/*.a`, gtk dev tools, etc.) is possible but

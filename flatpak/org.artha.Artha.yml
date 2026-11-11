@@ -130,7 +130,9 @@ modules:
       - CPATH=/app/include LIBRARY_PATH=/app/lib xmake f --prefix=/app -m release
       - CPATH=/app/include LIBRARY_PATH=/app/lib xmake
       - CPATH=/app/include LIBRARY_PATH=/app/lib xmake install -o /app
-      # Flatpak exports desktop files/icons named after the app-id
+      # Flatpak exports desktop files/icons named after the app-id.
+      # Icons must live in the hicolor theme to be exported (share/pixmaps
+      # is not picked up by this flatpak-builder); artha.png is 128x128.
       - install -Dm644 /app/share/applications/artha.desktop /app/share/applications/org.artha.Artha.desktop
       - sed -i 's/^Icon=artha$/Icon=org.artha.Artha/' /app/share/applications/org.artha.Artha.desktop
-      - install -Dm644 /app/share/pixmaps/artha.png /app/share/pixmaps/org.artha.Artha.png
+      - install -Dm644 /app/share/pixmaps/artha.png /app/share/icons/hicolor/128x128/apps/org.artha.Artha.png
