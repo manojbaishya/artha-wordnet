@@ -20,6 +20,11 @@ Module choices (rationale, unchanged from the hand-written .yml):
   project itself contains no autotools files or references.
   xmake    - the build system; built here for /app and removed in the
              final cleanup (the app itself does not depend on xmake).
+             The final cleanup also strips the from-source modules'
+             development artifacts (headers, static libs, pkg-config
+             files, libtool archives, debug symbols, docs, gir): the
+             runtime needs none of them and they are over half the
+             unstripped /app size.
   wordnet  - upstream Princeton WordNet 3.0; only lib + headers + dict
              data are installed. The upstream build requires Tcl/Tk
              (for the wishwn GUI) which we deliberately do not build, so
@@ -179,7 +184,28 @@ def build_manifest(deps):
         "command": "artha",
         "separate-locales": False,
         "finish-args": FINISH_ARGS,
-        "cleanup": ["/bin/xmake"],
+        "cleanup": [
+            "/bin/xmake",
+            # development artifacts of the from-source modules; useless
+            # (and large) at runtime. Artha is a C application: no headers,
+            # static libs, pkgconfig files, libtool archives, debug
+            # symbols, docs or GObject-introspection data are needed.
+            "/include",
+            "/lib/*.a",
+            "/lib/*.la",
+            "/lib/pkgconfig",
+            "/lib/debug",
+            "/lib/girepository-1.0",
+            "/share/aclocal",
+            "/share/gir-1.0",
+            "/share/gtk-doc",
+            # gtk2 module's development/demo tools
+            "/bin/dbus-binding-tool",
+            "/bin/gtk-builder-convert",
+            "/bin/gtk-demo",
+            "/bin/gtk-query-immodules-2.0",
+            "/bin/gtk-update-icon-cache",
+        ],
         "modules": modules,
     }
 

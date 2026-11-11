@@ -87,6 +87,7 @@ xmake install -o "$PWD/sandbox/stage"
 
     bin/artha  share/applications/artha.desktop  share/artha/gui.glade
     share/man/man1/artha.1  share/pixmaps/artha.png
+    share/metainfo/org.artha.Artha.metainfo.xml
 
 ## What the build does to (not) your system
 
@@ -121,6 +122,11 @@ inside the sandbox (WordNet 3.0 from Princeton, GTK+ 2.24.33,
 dbus-glib 0.112 — the exact versions the system has); nothing from the
 host is used. The app itself is built with the xmake.lua in this tree,
 via a prebuilt xmake 3.1.2 module which is removed in the final cleanup.
+The final cleanup also strips the modules' development artifacts
+(headers, static libs, pkg-config files, libtool archives, debug
+symbols, GObject-introspection data, gtk-doc, gtk2 dev/demo tools); the
+unstripped image went from 128 MB to ~64 MB with runtime behavior
+unchanged (verified by re-install and re-smoke).
 
 ```sh
 cd flatpak
@@ -158,8 +164,11 @@ permission. Notes:
   and the icon lives at `share/icons/hicolor/128x128/apps/org.artha.Artha.png`
   (`share/pixmaps` is not exported by this flatpak-builder); `Exec=artha`
   still works.
-- The flatpak is NOT published anywhere and is not ready for flathub:
-  no metainfo file, no repo hosting, sources are a local `type: dir`.
-  Slimming (`cleanup: /lib/*.a`, gtk dev tools, etc.) is possible but
-  was not done, to keep the exploratory build byte-identical to the
-  tested one.
+- Metainfo: `data/org.artha.Artha.metainfo.xml` (AppStream, id
+  `org.artha.Artha`) is installed to `share/metainfo` and validates with
+  `appstreamcli validate`. During the flatpak build, appstreamcli compose
+  auto-normalized the exports to the app id: `artha.desktop` is not
+  exported; `org.artha.Artha.desktop` (Icon rewritten to `org.artha.Artha`)
+  and a byte-identical hicolor copy of `artha.png` are. Preparatory work
+  for later distribution only: the flatpak is NOT published anywhere and
+  is not flathub-ready (no hosted source, no repo, local `type: dir`).

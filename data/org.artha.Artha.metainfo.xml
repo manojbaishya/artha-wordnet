@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.artha.Artha</id>
+  <name>Artha</name>
+  <summary>A cross-platform open-source thesaurus based on WordNet</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <developer_name>Artha contributors</developer_name>
+  <description>
+    <p>
+      Artha is a cross-platform open-source thesaurus with WordNet as its
+      database. Select text in any window, press a user-set hotkey, and
+      Artha pops up with definitions, synonyms and antonyms for the word.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Hotkey press to look up the selected word</li>
+      <li>Regular-expression search (wildcards like *, ?)</li>
+      <li>Passive desktop notifications for look-ups</li>
+      <li>Spelling suggestions when the exact spelling is not known</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">artha.desktop</launchable>
+  <url type="homepage">https://artha.sourceforge.net/</url>
+  <url type="bugtracker">https://launchpad.net/artha/+filebug</url>
+  <provides>
+    <binary>artha</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>Languages</category>
+    <category>Literature</category>
+  </categories>
+  <!-- OARS 1.1: all attributes are "none" for this application. -->
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.5" date="2020-07-27"/>
+  </releases>
+</component>

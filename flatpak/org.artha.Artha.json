@@ -13,7 +13,21 @@
         "--own-name=org.artha.unique"
     ],
     "cleanup": [
-        "/bin/xmake"
+        "/bin/xmake",
+        "/include",
+        "/lib/*.a",
+        "/lib/*.la",
+        "/lib/pkgconfig",
+        "/lib/debug",
+        "/lib/girepository-1.0",
+        "/share/aclocal",
+        "/share/gir-1.0",
+        "/share/gtk-doc",
+        "/bin/dbus-binding-tool",
+        "/bin/gtk-builder-convert",
+        "/bin/gtk-demo",
+        "/bin/gtk-query-immodules-2.0",
+        "/bin/gtk-update-icon-cache"
     ],
     "modules": [
         {

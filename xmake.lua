@@ -312,6 +312,7 @@ target("artha")
     add_installfiles("data/artha.1", {prefixdir = "share/man/man1"})
     if not is_plat("windows") then
         add_installfiles("data/artha.desktop", {prefixdir = "share/applications"})
+        add_installfiles("data/org.artha.Artha.metainfo.xml", {prefixdir = "share/metainfo"})
     end
 
 -- ---------------------------------------------------------------------
