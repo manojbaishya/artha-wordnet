@@ -5,6 +5,28 @@ removed from this tree. This document covers building, installing and
 packaging locally. Nothing here is published anywhere; the flatpak is for
 local testing only.
 
+## Dependencies (deps.json — single source of truth)
+
+`deps.json` (repo root) is the one authoritative dependency file:
+
+- `pc_minimum` — minimum versions enforced at configure time (read-only
+  pkg-config `--modversion`), formerly `configure.ac`'s `PKG_CHECK_MODULES`.
+  `xmake.lua` reads this; no version list is duplicated there.
+- `runtime` / `build_tool` / `flatpak` — the flatpak pins:
+  `org.freedesktop.Platform`/`Sdk` runtime version, the prebuilt xmake
+  tool, and the from-source module pins (wordnet, dbus-glib, gtk2).
+
+`flatpak/org.artha.Artha.json` is **generated** from deps.json by
+`python3 tools/gen_flatpak_manifest.py` (stdlib-only, no pip installs).
+Never edit the generated manifest by hand. After changing deps.json:
+
+```sh
+python3 tools/gen_flatpak_manifest.py          # regenerate
+python3 tools/gen_flatpak_manifest.py --check  # verify in sync (exit 1 if not)
+```
+
+The generated manifest is committed; `--check` is the drift guard.
+
 ## Prerequisites
 
 - `xmake` >= 3.0 (this tree was verified with 3.1.2) and `pkg-config`
@@ -55,7 +77,7 @@ xmake install -o "$PWD/sandbox/stage"
   Only read-only pkg-config metadata queries are used (`--cflags`,
   `--libs`, `--modversion`); minimum versions enforced (`gtk+-2.0 >= 2.24`,
   `glib-2.0 >= 2.22`, `dbus >= 0.60`) are the ones the old autotools
-  build enforced.
+  build enforced, now read from `deps.json` (`pc_minimum`).
 - WordNet has no `.pc` file; it is linked with `-lwordnet`, exactly as
   the old build did. Shared vs. static flavour is the system's choice.
 - `libwni` (built from `src/wni.c`, sources inside this project) is an
@@ -78,7 +100,8 @@ xmake install -o "$PWD/sandbox/stage"
 
 ## Flatpak (local exploration)
 
-`flatpak/org.artha.Artha.yml` builds Artha as a flatpak for
+`flatpak/org.artha.Artha.json` (generated from `deps.json`; see
+"Dependencies" above) builds Artha as a flatpak for
 `org.freedesktop.Platform//25.08`. Every dependency is built from source
 inside the sandbox (WordNet 3.0 from Princeton, GTK+ 2.24.33,
 dbus-glib 0.112 — the exact versions the system has); nothing from the
@@ -90,7 +113,7 @@ cd flatpak
 # build (org.freedesktop.Sdk//25.08 and Platform//25.08 are already
 # installed on this machine; first build downloads module sources)
 flatpak run --command=flatpak-builder --user org.flatpak.Builder \
-    --user .flatpak-build org.artha.Artha.yml --state-dir=.flatpak-builder
+    --user .flatpak-build org.artha.Artha.json --state-dir=.flatpak-builder
 # install into the user installation from a local repo and run
 rm -rf repo && flatpak build-export repo .flatpak-build org.artha.Artha
 flatpak install --user -y ./repo org.artha.Artha

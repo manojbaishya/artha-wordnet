@@ -9,8 +9,12 @@
 --   system libraries used by the autotools build are used here, via
 --   read-only pkg-config metadata queries (or -l flags for WordNet).
 --   No xmake package downloads, no installs, no system changes.
---   Minimum versions enforced are the ones configure.ac enforced:
---     gtk+-2.0 >= 2.24, glib-2.0 >= 2.22, dbus-1 >= 0.60, dbus-glib-1 >= 0.60
+--   Enforced minimum versions live in deps.json (repo root, `pc_minimum`)
+--   and are the ones configure.ac enforced: gtk+-2.0 >= 2.24,
+--   glib-2.0 >= 2.22, dbus-1 >= 0.60, dbus-glib-1 >= 0.60.
+--   deps.json is the single source of truth for dependency pins:
+--   tools/gen_flatpak_manifest.py reads the same file to emit
+--   flatpak/org.artha.Artha.json.
 -- * Libraries whose sources live inside this project (libwni) are built
 --   as a static library target and linked statically into the binary.
 --   No shared libwni is ever produced.
@@ -88,6 +92,23 @@ local common_defines = {
     'ICON_DIR="' .. icon_dir .. '"',
 }
 
+-- Dependency minimums are single-sourced in deps.json (repo root); the
+-- flatpak manifest generator reads the same file. `import` is not
+-- available at the root scope of xmake.lua, so the file is read lazily
+-- (memoized) from inside on_load, where import works.
+local pc_min_cache = nil
+local function pc_minimum(import_fn)
+    if pc_min_cache then return pc_min_cache end
+    local json = import_fn("core.base.json")
+    local path = os.projectdir() .. "/deps.json"
+    local data, errors = json.loadfile(path)
+    if not data then
+        raise("deps.json not readable at %s: %s", path, tostring(errors))
+    end
+    pc_min_cache = data.pc_minimum or {}
+    return pc_min_cache
+end
+
 -- Version comparison: x.y.z >= a.b.c
 local function version_ge(version, minimum)
     local function split(v)
@@ -109,24 +130,25 @@ end
 -- Queries are read-only (pkg-config --cflags/--libs/--modversion);
 -- nothing is downloaded, installed or modified.
 --
--- spec.packages: list of pkg-config package names (all must exist)
--- spec.minge:    optional list of minimum versions, same order
---                (enforced, mirroring configure.ac / PKG_CHECK_MODULES)
+-- spec.packages: list of pkg-config package names (all must exist).
+-- Floors come from deps.json (`pc_minimum`), the same file the flatpak
+-- manifest generator reads — no version list is duplicated here.
 -- spec.defines:  optional extra defines to add
 local function pkgconfig_on_load(spec)
     return function (target)
         import("lib.detect.pkgconfig")
 
-        for i, name in ipairs(spec.packages) do
+        for _, name in ipairs(spec.packages) do
             local info = pkgconfig.libinfo(name)
             if not info then
                 raise([[pkg-config: package '%s' not found.
 Install its development package (e.g. apt install <name>-dev / wordnet-dev),
 then re-run `xmake f`. Nothing is downloaded automatically.]], name)
             end
-            if spec.minge and spec.minge[i] then
-                assert(version_ge(info.version, spec.minge[i]),
-                    string.format("package '%s' >= %s required (found %s)", name, spec.minge[i], tostring(info.version)))
+            local min = pc_minimum(import)[name]
+            if min then
+                assert(version_ge(info.version, min),
+                    string.format("package '%s' >= %s required (found %s)", name, min, tostring(info.version)))
             end
             target:add("includedirs", info.includedirs or {})
             if info.defines then target:add("defines", info.defines) end
@@ -151,7 +173,6 @@ target("wni")
     add_defines(common_defines)
     on_load(pkgconfig_on_load({
         packages = {"glib-2.0"},
-        minge = {"2.22"},
     }))
 
 -- ---------------------------------------------------------------------
@@ -185,7 +206,6 @@ target("artha")
         add_ldflags("-mwindows")
         on_load(pkgconfig_on_load({
             packages = {"gtk+-2.0"},
-            minge = {"2.24"},
         }))
     else
         add_defines("DBUS_AVAILABLE", "X11_AVAILABLE")
@@ -197,7 +217,6 @@ target("artha")
         add_syslinks("wordnet")
         on_load(pkgconfig_on_load({
             packages = {"glib-2.0", "gmodule-2.0", "gtk+-2.0", "dbus-1", "dbus-glib-1", "x11"},
-            minge = {"2.22", "2.22", "2.24", "0.60", "0.60", nil},
         }))
     end
 
@@ -226,6 +245,5 @@ if is_plat("windows") then
         add_ldflags("-mwindows")
         on_load(pkgconfig_on_load({
             packages = {"glib-2.0"},
-            minge = {"2.22"},
         }))
 end
