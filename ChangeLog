@@ -1,0 +1,203 @@
+version 1.0.5 (Jul 27, 2020):
+	* Bumped libenchant’s version to libenchant2
+	* Fixed build and link errors
+	* Fixed copyright headers to only have start date
+
+version 1.0.4 (Aug 07, 2014):
+	* Fixed an issue in generating examples for verbs like 'get married' to strip
+	  '_' character in the lemma
+
+version 1.0.3 (Sep 20, 2012):
+	* Auto completion of wordnet terms implmented
+	* Wordnet terms load and auto completion list populate made idle exec. functions
+	* Lookup history made persistant; can be cleared or saved when required
+	* Invisible mode made optional; show window on startup made optional
+	* Polysemy count display now made optional; can be toggled via the toolbutton
+	* Status/tray icon now made optional; can be toggled via the toolbutton
+	* Added Member Of, Substance Of and Part Of classification to Holo and Meronyms
+	* "farcry" search should now fetch "far cry" correctly for both normal and
+	  notify lookup
+	* Added accelerators Ctrl + W and Ctrl + Q support
+	* Fixed issues in finding libnotify.so across distributions
+	* Fixed relative tab names by removing Similar for Nouns and Verbs (WNI)
+	* Fixed 671084 - Back button skips Wildmat search results
+	* Hotkey handling improved a lot in Win32; combos like Ctl + Alt + ` are fixed
+	* Fixed synchronisation, body limit and other issues in libnotify (Win32)
+	* Fixed 1010930 - CPU core pegging due to libnotify (Win32)
+	* Bumped min GTK+ version to 2.24 to remove deprecated GtkComboBoxEntry
+	  there by adding GtkComboBox with "has-entry" set to TRUE
+	* Bumped min GLib version to 2.22
+	* Lot of code clean-ups and minor fixes
+
+version 1.0.2 (May 27, 2010):
+	* Ported code to Win32 ~ added alternative code for special cases like 
+	  hotkey hook, selection capture, single instance check, etc.
+	* libnotify for Win32 (shared library) written from scratch
+	* Notification lookups are made a lot lightweight so that the notification 
+	  turnaround is much quicker; a proper lookup is made only on a window show
+	* If the user has disabled hotkey in prev. run, registers a new one in 
+	  current run, then the hookup doesn't happen. This is fixed now.
+	* On a futile look-up, notification shows the incorrect term now
+	* Query combo box mnemonic (Alt + Q) bug fixed.
+	* Fixed indirect dependencies (gold linker deb issue: 553965)
+	* Fixed incorrectly named "sense.index" to "index.sense" 
+	  (deb issue: 571948)
+	* Fixed a crash on looking up ".", "-" and "_" (lp issue: 531475)
+
+version 1.0.1 (Jan 19, 2010):
+	* Suggestions will now be made with the localised dictionary given priority
+	* WordNet library database cyclic errors now treated as warnings for Detailed 
+	  mode to work on platforms with older WordNet builds like Fedora, OpenSUSE, etc.
+	  (http://bugs.launchpad.net/artha/+bug/508250)
+	* Special hotkey modifiers like Super, Hyper, etc. will now work on all keyboards
+	* Fixed couple of potential leaks (wni.c - incorrect termination of if stmt. and 
+	  gui.c - destruction of hotkey editor obtained via gtk_builder_get_object 
+	  are now corrected)
+	* Altered sensitivity of GtkComboBoxEntry for desktop environments like KDE 4.3
+	* Made compund words uniform throughout all text docs
+
+version 1.0.0 (Jan 10, 2010):
+	* New feature - hotkey editor - for customizing hotkeys
+	* Instance Handler - Multiple instances are handled gracefully, maintaining 
+	  one single unique instance always, across a session
+	* Sure shot window focus to the user on hotkey summoning
+	* Notifications are now a plug-in; no need for dev. headers of libnotify to build
+	* Lot of code clean-ups and minor fixes
+
+version 0.9.1 (May 17, 2009):
+	* Null checks added to regex search variables/modules.
+	* Crash fixed in case of a missing sense.index file; an error is now thrown.
+	* Statusbar will now be updated for index load, normal lookups and regex searches.
+	* Incorrect decl. of the results count variable fixed; earlier it was showing 
+	  only the data type's upper limit as the maximum.
+	* Redundant action button 'Detailed Lookup' in notification removed;
+	  status icon can be used to bring up the application.
+	* Loading message set on status bar when indexing.
+	* Startup Notification to the Desktop manager fixed.
+	* Configure.ac and Makefile.am modified to suit building WordNet from source.
+
+version 0.9.0 (Apr 26, 2009):
+	* Regex based search feature is now implemented. Accepted pattern will be 
+	  based on Wildmat syntax I.e. * (wild card), ? (joker), [a|c-k] {2, } 
+	  (ranges), + can be used primarily.
+	* Double clicking on the definition textview, will now check for compound 
+	  words surrounding the actual selection, and if a valid match is found, 
+	  will jump to that for a look up rather than on the actual selection.
+
+version 0.8.0 (Feb 09, 2009):
+	* Artha will now give suggestions when a misspelled word is searched for. 
+	  Suggestions module added, which looks for libenchant at runtime.
+	* When a (list type) relative is selected, the respective senses to which it 
+	  relates to are now highlighted.
+	* Indirect Antonyms will now have an additional column where the Similar term 
+	  through which it relates to the search term is displayed.
+	* Examples will now appear in a single line delimited by a ';'.
+	* Mouse wheel can now scroll through the history list.
+	* When WordNet dict files couldn't be opened, the user is shown a message.
+	* Relative tabs reordered based on most-used ones and complexity.
+	* The current hotkey set will now be displayed in the About dialog.
+	* When no hotkey could be set, Artha won't be persistent.
+	* Bug in saving preferences fixed.
+	* Bug in filtering invalid characters on search fixed.
+	* Bug in finding relatives with more then one sense mapping fixed.
+	* Few memory leakages relating GError variables are fixed.
+	* Crash when a link is clicked in the About box fixed.
+
+version 0.7.2 (Jan 31, 2009):
+	* Toolbar button added for toggling Notifications.
+	* If the notification-daemon is missing in a the system, the notification 
+	  requests sent by Artha are received by libnotify but the user doesn't 
+	  see anything. This issue is fixed, by disabling notifications if the 
+	  notify_init() fails.
+	* Moved to .png from .svg because it is not supported in a few distros.
+	* Preferences (conf file) are now saved on load pref., if its a first run.
+	* Preferences are now saved on every setting change, not on app. exit.
+	* Fixed issues in configure script.
+	* Changed automake script to sync with configure script.
+	* Both Toolbar button and menu now reads "Notify", earlier it was Notify 
+	  and Notifications.
+	* All characters other than alpha numeric, -, _ and blank space are stripped
+	  on either side of the selection clipboard text.
+	* Removed dependency on g_strcmp0() (which is present only on GLib >= 2.16) by 
+	  writing a custom wrapper over strcmp. Now all the functions of GLib used by 
+	  Artha are of Glib 2.10 or below.
+
+version 0.7.1 (Jan 29, 2009):
+	* Fixed Tooltip for Meronyms in relative tabs/trees.
+	* Fixed tree store unreferencing when creating tree stores for relatives.
+	* Focus to the Query field is now set on pop-up.
+	* 'Report a Bug' button added to About dialog box.
+	* Fixed an issue regarding the welcome message, when notifications are disabled.
+	* libdus threads init function called using its GLib bindings.
+
+version 0.7.0 (Jan 23, 2009):
+	* 3 more hotkey combos added (so now it is Ctrl + Alt + [W|A|T|Q]) to 
+	  the list of hotkeys. Artha will try setting them in this order. If 
+	  none succeeds, the Notifications feature is disabled properly.
+	* On first run or when the hotkey changes w.r.t the prev. run, Artha 
+	  shows a message box with details as a help to the user.
+
+version 0.6.5:
+	* Last set preferences are stored in a .conf file (persistent settings).
+	* gtk_show_uri's availability now found in run-time.
+
+version 0.6.4:
+	* 'Attributes' tab gets renamed (Attributes/Attribute of) based on the 
+	  POS (NOUN/ADJ) of the term's attribute item.
+	* Shortcut in Applications Menu using .desktop file implemented.
+
+version 0.6.3:
+	* Man page added, with minimal briefing.
+	* Link hooks for email/url in About screen created.
+
+version 0.6.2:
+	* Status Bar is now updated based on the latest search results.
+	* Fixed not searching of an already searched term immediately after a failed 
+	  search bug.
+
+version 0.6.1:
+	* Relatives List double-click/return handled, to jump to the corresponding term.
+	* About box created, licences & credits mentioned and made part of the GUI.
+	* Autoconf and automake employed.
+	* ChangeLog, NEWS, TODO, README, COPYING & AUTHORS are added.
+
+version 0.6.0:
+	* Previous and Next buttons were added.
+	* Bug fix to prevent searching a word twice (in case of searching a word already in 
+	  history list) added.
+
+version 0.5.0:
+	* Hand written Makefile employed for the project.
+	* 2 Modes of Artha designed. 'Detailed' button added. Trees are now removed in 
+	  case of simple mode.
+
+version 0.4.1:
+	* Code to populate tree-based relatives added.
+	* Bold face for multiple occurring, higher weightage relatives implemented in 
+	  relative lists.
+	* Issue in checking for duplicate terms against the current lists, in WNI, fixed.
+
+version 0.4.0:
+	* Code to populate list-based relatives added.
+	* Code to display 'familiarity' (based on polysemy count) added with colour-coding 
+	  based on weightage.
+	* Combo box for maintaining history of searched words added.
+
+version 0.3.0:
+	* GUI designed in Glade3, with Tabs and Toolbar.
+	* Code to fill-in formatted definitions with colour coding added.
+	* strip_adj_marker usage minimized in WNI, to only ADJ terms.
+
+version 0.2.0:
+	* Key hooking using XGrabKey and getting primary clipboard data achieved.
+	* Notification of a selected word's definition displayed, the first visible GUI version
+	  of Artha born.
+
+version 0.1.1:
+	* WordNet Interface (engine) module completed. Now all possible relative list 
+	  generations for a given request is serviced by WNI.
+	* Memory allocation code moved from g_malloc0 to g_slice_alloc0.
+
+version 0.1.0:
+	* Initial version of WordNet Interface created, with all list based relatives populated.
+

@@ -1,0 +1,28 @@
+Users' Wish List:
+* Move to libappindicator
+* Upgrade to GTK+ 3 or 4
+* Pronunciations
+* Command-line interface (n/PDCurses)?
+* i18n
+* Option to make the hotkey a switch
+* Single click jump to words in both senses and relatives as an option
+* Spacing issue; not all spaces are filled with '_' in the index files E.g. 24-karet_gold in index.noun
+* Use g_slist_free_full in WNI to make free code cleaner
+
+To Do:
+
+* Help docs and Preferences windows are to be added with few more features.
+
+* Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
+
+* Wrapped text should get aligned with the definition start and not the sense count start
+
+Settings
+~~~~~~~~
+Watch clipboard/selection
+Fonts and Colours
+
+libgtkhotkey seems to be a good way of removing platform-specific code to manage hotkey.
+flite seems to be good speech engine for implementing pronunciation feature
+showing phonetics seems to be possible now with the Moby Project
+new version of libenchant available and Artha needs to be updated accordingly

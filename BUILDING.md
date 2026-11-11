@@ -1,0 +1,126 @@
+# Building Artha
+
+Artha is built with **xmake** (see `xmake.lua`); the autotools build has been
+removed from this tree. This document covers building, installing and
+packaging locally. Nothing here is published anywhere; the flatpak is for
+local testing only.
+
+## Prerequisites
+
+- `xmake` >= 3.0 (this tree was verified with 3.1.2) and `pkg-config`
+- A C compiler and the system development packages for:
+  - `gtk+-2.0 >= 2.24`, `glib-2.0 >= 2.22`, `gmodule-2.0`
+  - `dbus-1 >= 0.60`, `dbus-glib-1 >= 0.60`, `x11`
+  - WordNet development files (`wn.h` + `libwordnet`; on Debian: `wordnet-dev`)
+- `libenchant-2` and `libnotify` are **not** build-time dependencies
+  (loaded at runtime via `dlopen()`; Artha runs fine without them)
+- On this machine, linuxbrew's `ld`/`as`/`ar` shadow the system ones and
+  misresolve glibc symbols. Invoke xmake as
+  `PATH=/usr/bin:$PATH xmake ...` or pass `xmake f --ld=/usr/bin/ld --as=/usr/bin/as --ar=/usr/bin/ar`.
+  (A host quirk, deliberately not baked into `xmake.lua`.)
+
+## Build
+
+```sh
+xmake                 # configures and builds into ./sandbox
+xmake f -m debug && xmake   # debug build
+```
+
+Artifacts (objects and the binary) stay inside the gitignored `sandbox/`
+directory of the project root:
+
+    sandbox/linux/x86_64/release/artha
+
+A plain `xmake` binary uses the default prefix `/usr/local`, i.e. it looks
+for `gui.glade`/`artha.png` in `/usr/local/share/artha` and
+`/usr/local/share/pixmaps` — same semantics as the old autotools build
+with no `--prefix`. To run the binary without installing into the system,
+stage it locally:
+
+```sh
+xmake f --prefix="$PWD/sandbox/stage"
+xmake
+xmake install -o "$PWD/sandbox/stage"
+./sandbox/stage/bin/artha
+```
+
+`xmake install` lays out the same tree the autotools build produced:
+
+    bin/artha  share/applications/artha.desktop  share/artha/gui.glade
+    share/man/man1/artha.1  share/pixmaps/artha.png
+
+## What the build does to (not) your system
+
+- Dependencies are **not** upgraded, downloaded, replaced or installed.
+  Only read-only pkg-config metadata queries are used (`--cflags`,
+  `--libs`, `--modversion`); minimum versions enforced (`gtk+-2.0 >= 2.24`,
+  `glib-2.0 >= 2.22`, `dbus >= 0.60`) are the ones the old autotools
+  build enforced.
+- WordNet has no `.pc` file; it is linked with `-lwordnet`, exactly as
+  the old build did. Shared vs. static flavour is the system's choice.
+- `libwni` (built from `src/wni.c`, sources inside this project) is an
+  xmake **static** target and is archived into the binary. No shared
+  `libwni` is produced or installed. System libraries stay dynamic.
+- `config.h` is gone; the macros it carried are passed as `-D` defines
+  (`PACKAGE*`, `APP_DIR`, `ICON_DIR`, `DBUS_AVAILABLE`, `X11_AVAILABLE`,
+  deprecated-API guards), which is all the sources reference. Debug
+  output stays off by default, as with the old build without
+  `--enable-debug`.
+
+## What is not migrated / leftovers
+
+- The autotools build is **gone**; xmake is the only build system.
+  `README` points here for build instructions.
+- Windows (Win32) build: mirrored from the old `src/Makefile.am` (shared
+  `libnotify.dll` from `src/libnotify.c`, `app_icon.rc` /
+  `libnotify_ver.rc`, now self-contained — no `config.h`), **untested**.
+- `xmake install` does not install `libwni`.
+
+## Flatpak (local exploration)
+
+`flatpak/org.artha.Artha.yml` builds Artha as a flatpak for
+`org.freedesktop.Platform//25.08`. Every dependency is built from source
+inside the sandbox (WordNet 3.0 from Princeton, GTK+ 2.24.33,
+dbus-glib 0.112 — the exact versions the system has); nothing from the
+host is used. The app itself is built with the xmake.lua in this tree,
+via a prebuilt xmake 3.1.2 module which is removed in the final cleanup.
+
+```sh
+cd flatpak
+# build (org.freedesktop.Sdk//25.08 and Platform//25.08 are already
+# installed on this machine; first build downloads module sources)
+flatpak run --command=flatpak-builder --user org.flatpak.Builder \
+    --user .flatpak-build org.artha.Artha.yml --state-dir=.flatpak-builder
+# install into the user installation from a local repo and run
+rm -rf repo && flatpak build-export repo .flatpak-build org.artha.Artha
+flatpak install --user -y ./repo org.artha.Artha
+flatpak run org.artha.Artha
+```
+
+`flatpak-builder` is used from the user-installed `org.flatpak.Builder`
+app (no sudo needed); a system `flatpak-builder` package would also work.
+
+Permissions (`finish-args`): `--share=ipc`, `--socket=x11`,
+`--device=dri` (Artha is a pure X11 app), `--talk-name=org.freedesktop.Notifications`
+(it dlopens libnotify, which the 25.08 runtime ships), and
+`--own-name=org.artha.unique` (single-instance bus name). No network
+permission. Notes:
+
+- Single instance: do not add a second `--talk-name=org.artha.unique`;
+  flatpak applies same-name policies last-flag-wins and the name ends up
+  `talk`-only (this exact bug was hit and fixed).
+- WordNet dict lives at `/app/dict` (upstream `$prefix/dict` layout via
+  `DEFAULTPATH`).
+- Enchant is absent from the SDK; spelling suggestions are silently
+  disabled, exactly as on a host without libenchant-2.
+- The gtk2 build uses `-std=gnu11` and historic diagnostic levels
+  (`-Wno-incompatible-pointer-types`, `-Wno-implicit-int`) because the
+  SDK's gcc defaults to gnu23 / gcc-14 diagnostics and this pre-C23
+  codebase does not compile under them. No source was patched.
+- Export naming: both the desktop file and the icon are installed as
+  `org.artha.Artha.*` so flatpak exports them; `Exec=artha` still works.
+- The flatpak is NOT published anywhere and is not ready for flathub:
+  no metainfo file, no repo hosting, sources are a local `type: dir`.
+  Slimming (`cleanup: /lib/*.a`, gtk dev tools, etc.) is possible but
+  was not done, to keep the exploratory build byte-identical to the
+  tested one.

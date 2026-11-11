@@ -1,0 +1,220 @@
+1.0.5 (Jul 27, 2020)
+	This is purely a maintenance release.  Arch User Repository's artha package discussions showed
+	that Artha has build issues due to newer GCCs.  Similarly Autotool-files needed a bump to newer
+	versions.  Thanks to a user's mail which brought this to attention.  Artha has to be upgraded to
+	use a newer GUI toolkit like GTK+ 3 (or the yet-to-release 4).  However, it'd be wise to fix
+	imminent issues first to unblock people who want the tool now than delay it in the name of
+	development.  Took this opportunity to fix copy right headers with data found in
+	https://softwareengineering.stackexchange.com/q/130478/4154
+
+1.0.3 (Sep 20, 2012)
+	After a long hiatus, Artha gets updated with new features and lot of fixes in overall
+	portable code and in Win32-specific code as well. Auto completion of wordnet terms is a nice
+	feature since it makes finding words easy. Threads were considered initially when loading
+	wordnet terms from index file into the GtkEntryCompletion, but was called off, since a more
+	elegant solution would be to use the idle wait. Lookup history is now persistant and can be
+	cleared or saved to a file when required. Initially saving lookup history was coupled with
+	the config/settings file and implemented, but this was deemed slow and instead storing them in
+	a plain file was opted and found to be faster/simpler. Minor features like making the display
+	of status/tray icon and polysemy classification optional and adding sub-classifications in
+	Holo and Meronyms were implemented; simple but handy feature of Ctrl + W and Ctrl + Q for close
+	and quit makes Artha more compliant to Linux philosophy; although this release started mainly
+	as a clean-up release, it ended up have many small but useful features, from users wishlist.
+	aimed at making way for the next major release with pronunciation feature using some TTS
+	engine.	Documentation was lacking for WNI for a long time, which was done and checked in as a
+	docbook. Another issue of finding the libnotify.so on different distros has a decent fix right
+	now, although a more concrete fix would be better. A good deal of refactoring was done to
+	functions like button_search_click which has oodles of lines, now broken down to 6 smaller
+	functions; lot of minor fixes both to the source and few to the make/conf files done. Since
+	GtkComboxBoxEntry was deprecated since 2.14 and GtkComboBox got it's "has-entry" property only
+	since 2.24, this will be the minimum version of GTK+ from now on that Artha depends on.
+
+1.0.2 (May 27, 2010)
+	Finally, Artha is truly cross-platform now! A M$ Windows build is made with exactly the 
+	same features available on Linux. No mismatch or feature cutdowns between the two versions. 
+	To meet this requirement, the biggest hinderance was that libnotify or notification daemon 
+	doesn't exist on Windows; so a libnotify shared library was written from scratch with pure 
+	Win32 APIs. This is written to work with only one app. at a given time; this should be 
+	improved to support many applications ~ concurrency; Later, this can be developed into a 
+	separate project "libnotify for Win32" which can be used by any app. that needs libnotify
+	in Windows environment. Notification turn around is a lot quicker now since the lookup when 
+	in notification mode is made a lot lightweight. A setup installer for Windows is created 
+	using Inno Setup. Even though 2.16 of GTK+ Win32 runtime is said to be stabler it crashes
+	when MS-Windows theme is set. 2.18 works perfectly fine and hence this is bundled. Instead 
+	of going for a common GTK+ installation like Tor Lillqvist suggests to most beginners that 
+	an in-folder, per app. private GTK+ runtime installation is much better and works well.
+
+1.0.1 (Jan 20, 2010)
+	Suggestions feature was first implemented with the logic to look for 'en' dict and if not 
+	found, some arbitrary 'eb_*' dict was chosen by enumeration. This was done on the reasoning 
+	that in some legacy systems LANG environment variable wouldn't be set. But then, with this 
+	release, it looks for the variable, if found, it uses it to see if the user has a English 
+	variant set, if so, then it tries to load that locale of English dictionary's availability.
+	Hotkey modifiers like Super, Hyper, etc. didn't work since the function to resolve those 
+	mods was not called before registering with the X server. This was found in UbuntuForums.
+	The previous release had a couple of major bugs. One was a possible memory leak where in a 
+	top level widget obtained from GtkBuilder was not destroyed. Then, in a few distros, like 
+	Fedora, OpenSUSE, etc. which have an older WordNet package, when Detailed mode is set, it's 
+	library hits the max depth for words like 'muzzle', 'mortify', etc. Artha catches these 
+	gracefully, but treats them as errors, while now they are treated as warnings, and stops 
+	search beyond allowed depth. With WordNet now having a revamped web site, the links seem to 
+	have changed. These and inconsistency with compund words like hotkey, lookup, etc. are fixed.
+	In KDE, the default property value for 'sensitivity' of GtkComboBoxEntry seems to be FALSE, 
+	so KDE-ians were not able to enter any search text, now it's fixed by setting in GUI xml.
+
+1.0.0 (Jan 08, 2010)
+	After a long time, the most wanted and the earliest charted feature, hotkey customization, 
+	is done. Initially the famed eggcellrendererkeys from gnome-control-center was tried; but the 
+	same cell renderer for accelerators seems to have been available for a long time under the name  
+	'GtkCellRendererAccel'. This is used for the same, and it exactly fits the purpose. Handling 
+	multiple instances, to make sure only a single instance runs at a given time, was a long 
+	standing requirement. This is achieved using D-Bus. libnotify's dependency is now completely 
+	removed; it's availability will be determined @ run time; if available, it's functions will 
+	be dynamically linked and called to show notifications. gtk_window_present to display Artha's 
+	main window as the foremost was not working properly. libtomboy helped here, with it's function 
+	tomboy_window_present_hardcore; with this when ever the hotkey is pressed, the window not only 
+	comes to the foreground, but also grab's the foucs properly. gtk-builder-convert tool dependency 
+	is also removed since the latest release of Glade (glade3) gives XML output that is directly 
+	parse-able by GtkBuilder. Cluttered welcome message boxes are now removed since the hotkey is 
+	now customizable. Overall code is now restructured with a few other minor bugs fixes. Autoconf 
+	and Automake files had a uninstall issue which is fixed and both the files are now cleaner with 
+	lesser number of checks for development headers. All in all it's a vital release with a major 
+	feature addition and lot of changes to code and build structure; this is the actual release 
+	that truly meets all the primary goals set during Artha's genesis :)
+
+0.9.1 (May 17, 2009)
+	Trying Artha on Fedora showed that searching for library wordnet fails when one builds WordNet 
+	from source as it gives a archive library output libWN.a and configure looks for libwordnet.so.
+	This is now corrected. When index.sense is missing during the start up, the wordnet_terms var. 
+	remains NULL and performing a regex search on it leads to a crash which is now fixed. Artha 
+	will throw an error saying that the index file was missing on startup. It was decided against 
+	populating the index file on start up using the other index files namely index.noun, index.verb, 
+	index.adj and index.adv. The reason is that building WordNet from source installs index.sense 
+	by default. In case of binaries it can be added to the dependencies, if it is available only as a 
+	separate package. Status bar is now updated on index load, usual lookups and regex searches.
+	Ubuntu 9.04 has introduced new a notification system, wherein if the notification has any 
+	action button, the notification is shown up as a message box (already posts are showing up on 
+	the net that it sux :) Although, the 'Detailed Lookup' button in Artha was redundant (one can 
+	bring up the app. by clicking on the status bar icon). Hence the action button is now cleared.
+
+0.9.0 (Apr 26, 2009)
+	wildmat is a somewhat simplified form of regex which can be used by laymen and advanced users
+	alike. Artha now has regex based search for locating a term in the thesaurus. A conversion 
+	func. from the former to later pattern is done and GRegex is used to search the WordNet terms.
+	On startup, index.sense of WordNet is located and all terms are ripped and stored in the mem.
+	which will be used for the regex based searches. Apart from this, double click selecting a
+	term in the definition text view, now looks up for compund terms and if available, jumps to 
+	that instead of the actual term selected by double click.
+
+0.8.0 (Feb 10, 2009):
+	Since libenchant is a good wrapper over a lot of dictionaries, it is chosen for suggestions. 
+	When Artha loads, it will look for libenchant.so.1 and see if it can get the handles to its 
+	functions. If found, Artha can show suggestions on a misspelled word search. libnotify should 
+	also be made as a plugin, so that a direct dependency can be cut, but that is something for 
+	the next release, along with the regex based searches. Since mappings between relatives and 
+	senses are difficult to find, highlighting is done now, when a relative is selected. In all 
+	the previous versions, when in detailed mode, each 'Indirect Antonym' was shown under its 
+	parent 'Similar' word (word similar to the searched term) due to which it is conceived as an 
+	antonym. Now those similar words are put up in a new column so as to avoid confusion. Lot of 
+	small bugs and petite memory leaks fixed, apart from these major ones.
+
+0.7.2 (Jan 31, 2009):
+	After trying 0.7.1 on Kubuntu, lots of insights were gained. Even though libnotify is present 
+	with dbus, notifications are not shown, since notification-daemon is missing. Hence a check 
+	for notify_init's return value is now done, and when it fails, Artha refrains from showing 
+	the option at all to the user. Likewise, svg was not supported for menu icons and status bar 
+	icon, hence the svg pixbuf is now replace by a png, as it is better supported on most systems. 
+	Autotools scripts, both configure and makefile had bugs in finding the library availablity. 
+	Hence moved all AC_CHECK_LIBs to pkg-config based checks. When the version number is found 
+	incremented (from the conf file), the user is thanked for updating. Preferences are now saved 
+	whenever a setting is toggled and not on app. exit. All characters not recognised by WordNet 
+	(characters other than alpha, num, -, , _) are stripped off the selection text. Summoning 
+	should generally fetch results, better end user experience. When doing a complete code 
+	walkthru' to find the maximum version number of GLib and GTK+, it was found that except the 
+	func. g_strcmp0, all other GLib functions were either of 2.10 or earlier. Hence wrote a 
+	custom wrapper over strcmp to remove the dependency on Glib 2.16. So now the maximum usage of 
+	GLib abd GTK are the modules GSlice and GtkBuilder. Phew! Its a pretty hefty release, eh? :)
+
+0.7.1 (Jan 29, 2009):
+	Finally, for bug tracking, Artha is registered in LaunchPad! A 'Report a Bug' button is kept 
+	on the About dialog for easy user access. After reading the dbus API docs, came to know that 
+	using GLib bindings API is the right way. Hence changed the low-level dbus call to dbus-GLib 
+	call to initialize threads in dbus.
+
+0.7.0 (Jan 23, 2009):
+	Since the help is yet to be created, a message box is put for first runs and hotkey changes, 
+	so as to notify the user. Instead of sticking to Ctrl + Alt + W, 3 more hotkey tries are 
+	added to the list. Artha tries to set them one by one. If none are available, summoning and 
+	notifications are disabled.
+
+0.6.5:
+	Last set user's preferences (mode & notifications) will now be stored in a .conf file in the 
+	user's config. directory. gtk_show_uri's availability now found in run-time, so that version 
+	2.12 of libgtk is now enough to run/build Artha, instead of 2.14.
+
+0.6.4:
+	'Attributes' tab will now get renamed dynamically based on the term. E.g. for 'tall' it gets 
+	renamed to 'Attribute of' & for 'height' it gets renamed to 'Attributes'. Applications menu 
+	shortcut will now get created for Artha under Accessories, implemented with .desktop file.
+0.6.3:
+	Finally, a bare bones man page is added to the dist! :) gtk_show_uri(), which is present since 
+	GTK+ 2.14, is required for email/url hooks in About screen, all other functions used will build 
+	againt 2.12. Hence I created a macro using autoconf. If compiled against libgtk 2.14 or greater, 
+	email and url hooks in About screen will be present from now on.
+
+0.6.2:
+	Status bar is now updated with the number of senses in different POSs (Part of Speeches). A 
+	minor bug, which resulted in not searching of a already searched term, when the last search 
+	was unsuccessful, fixed.
+
+0.6.1:
+	Double clicking or pressing Enter/Return key on a relative from any of the relative list, now 
+	jumps to that word's definition search. About box, credits & licence are now mentioned in the 
+	GUI. Autoconf and automake are now used to automate the building process in diff. environments. 
+	Files COPYING, TODO, AUTHORS, NEWS, INSTALL, README & ChangeLog are added to the project.
+
+0.6:
+	Previous and Next buttons are added to give a browser like feature, wherein the user can scroll 
+	thru' the list of terms they have searched. In case of a word already in history, when searched, 
+	the word is searched and results are set as usual, but the word is searched for in the history, 
+	and its set as the current active index in the combo box, that in-turn was calling the search 
+	button click module again, resulting in 2 recursive searches. This issue is fixed.
+
+0.5:
+	After reading a few tutorials, first hand-written Makefile for Artha created with a few rules. 
+	Two modes, one simple and the other advanced, designed for simplicity. Users who prefer to live 
+	in list based relatives can do so, while veterans who want detailed info on the relatives of a 
+	term can also do so with the help of the 'Detailed' mode button.
+
+0.4.1:
+	Populating of tree based relatives done (using recursion). Using the attributes concept of the 
+	tree view, bold face for multi occuring relatives are displayed. WNI had a small bug, wherein 
+	the term in question is checked against all of the master list, while missing the current list. 
+	This issue is fixed.
+
+0.4:
+	Populated list based relatives in the respective GTK Tree View with Tree Store model. Referred 
+	X's rgb.txt and assigned different colours for different familiarity category, with the lightest 
+	for the most familiar (very familiar) to the darkest for the least (very rare). History of 
+	searched words started to maintain in the drop down combo box with a GTK list store.
+
+0.3:
+	After doing code profiling of WNI using gprof, strip_adj_marker() was found to be getting 
+	called highly redundantly, it is removed where ever not required. GUI designed with Glade3, while
+	GTK Builder class is used for loading the GUI. Definitions of a searched string displayed in the 
+	designed GTK Text View. Initially formatting was like hell, once GTK Text Tag concepts came in, 
+	this was much better with a decent formatting/colour-coding scheme.
+
+0.2:
+	XGrabKey, to grab a hotkey combo, which was long done (2007 year end) before the project started 
+	came in very handy when it was required. libnotify used to display the first definition of Artha 
+	from System Tray icon.
+
+0.1.1:
+	Memory leaks checked with Valgrind. Since Slice Allocator was recommended by GTK+, code's 
+	alloc's. moved to Slice Alloctor.
+
+0.1:
+	After a lot of contemplation, WordNet Interface module is created with a list model for a 
+	few relative lists and tree model for the remaining, so that they can be used for different modes.
+

@@ -1,0 +1,19 @@
+# Artha - build outputs and tool state
+#
+# The xmake build writes everything into sandbox/ so the source tree
+# stays clean. This file keeps the sandbox (and other tool state) out
+# of version control.
+
+# xmake build output (the binary lands in sandbox/<plat>/<arch>/<mode>/)
+/sandbox/
+# xmake configuration/cache directory
+/.xmake/
+
+# flatpak builder state, build dir and local test repo
+/flatpak/.flatpak-builder/
+/flatpak/.flatpak-build/
+/flatpak/repo/
+
+# local tool state (machine-specific; not for the public repo)
+/.idea/
+/.codex/
