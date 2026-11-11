@@ -23,10 +23,6 @@
  */
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "gui.h"
 
 /* Global variables */
@@ -601,10 +597,10 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	GtkWidget *about_dialog = gtk_about_dialog_new();
 
 	g_object_set(G_OBJECT(about_dialog), "license", STR_LICENCE, "copyright", STR_COPYRIGHT, 
-	"comments", STR_ABOUT, "authors", strv_authors, "version", PACKAGE_VERSION, 
+	"comments", STR_ABOUT, "authors", strv_authors, "version", ARTHA_VERSION, 
 	"wrap-license", TRUE, 
 	"website-label", STR_WEBSITE_LABEL,
-	"website", PACKAGE_URL, NULL);
+	"website", ARTHA_URL, NULL);
 
 	gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
 	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), NULL);
@@ -2326,7 +2322,7 @@ static void clear_history(GtkMenuItem *menu_item, GtkListStore *list_store_query
 	GFile *history_file = NULL;
 
 	gtk_list_store_clear(list_store_query);
-	hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+	hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 	history_file = g_file_new_for_path(hist_file_path);
 	g_free(hist_file_path);
 	hist_file_path = NULL;
@@ -2360,7 +2356,7 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 	if((GTK_RESPONSE_OK == response) && dest_filename)
 	{		
 		GFile *history_file = NULL;
-		gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+		gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 		if(!hist_file_path)
 		{
 			g_free(dest_filename);
@@ -2452,7 +2448,7 @@ static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu,
 
 static void load_history(GtkListStore *list_store_query)
 {
-	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 	if(!hist_file_path)
 	{
 		g_warning("Failed creating path to load history");
@@ -2790,11 +2786,11 @@ static void load_preference_hotkey(gboolean *first_run)
 
 	if(version)
 	{
-		if(0 != g_strcmp0(version, PACKAGE_VERSION))
+		if(0 != g_strcmp0(version, ARTHA_VERSION))
 		{
 			/* version number is split here. Major, Minor, Micro */
 			gchar **version_numbers = g_strsplit(version, ".", 3);
-			gchar **current_version_numbers = g_strsplit(PACKAGE_VERSION, ".", 3);
+			gchar **current_version_numbers = g_strsplit(ARTHA_VERSION, ".", 3);
 			
 			for(guint8 i = 0; (NULL != version_numbers[i] && NULL != current_version_numbers[i]); i++)
 			{
@@ -2841,7 +2837,7 @@ static gboolean load_preferences(GtkWindow *parent)
 		g_error("Error creating GKeyFile to load/store preferences");
 	}
 
-	gchar *conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
+	gchar *conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, CONF_FILE_EXT, NULL);
 	if(g_key_file_load_from_file(config_file, conf_file_path, G_KEY_FILE_KEEP_COMMENTS, NULL))
 	{
 		advanced_mode = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_MODE, NULL);
@@ -2890,7 +2886,7 @@ static gboolean load_preferences(GtkWindow *parent)
 static gboolean update_history_in_file(const gchar *term)
 {
 	gboolean update_succeeded = FALSE;
-	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 	if(!hist_file_path)
 	{
 		g_error("Failed creating path to save history");
@@ -2910,7 +2906,7 @@ static gboolean update_history_in_file(const gchar *term)
 static void save_preferences_to_file()
 {
 	gsize file_len = 0;
-	gchar *conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
+	gchar *conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, CONF_FILE_EXT, NULL);
 	gchar *file_contents = g_key_file_to_data(config_file, &file_len, NULL);
 	GError *err = NULL;
 
@@ -2935,7 +2931,7 @@ static void save_preferences()
 {
 	g_key_file_set_comment(config_file, NULL, NULL, SETTINGS_COMMENT, NULL);
 
-	g_key_file_set_string(config_file, GROUP_SETTINGS, KEY_VERSION, PACKAGE_VERSION);
+	g_key_file_set_string(config_file, GROUP_SETTINGS, KEY_VERSION, ARTHA_VERSION);
 	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
 	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
 	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
@@ -3484,7 +3480,7 @@ static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_co
 							GTK_BUTTONS_OK,
 							str_body, NULL);
 
-	g_object_set(msg_dialog, "title", PACKAGE_NAME, NULL);
+	g_object_set(msg_dialog, "title", ARTHA_NAME, NULL);
 	gtk_dialog_run(GTK_DIALOG(msg_dialog));
 	gtk_widget_destroy(msg_dialog);
 
@@ -3528,7 +3524,7 @@ int main(int argc, char *argv[])
 
 #ifdef G_OS_WIN32
 	/* logic for single instance apps. on Win32 */
-	HANDLE single_instance_mutex = CreateMutex(NULL, FALSE, TEXT(PACKAGE_NAME));
+	HANDLE single_instance_mutex = CreateMutex(NULL, FALSE, TEXT(ARTHA_NAME));
 
 	if(ERROR_ALREADY_EXISTS == GetLastError() || !single_instance_mutex)
 	{
@@ -3539,7 +3535,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	g_set_application_name(PACKAGE_NAME);
+	g_set_application_name(ARTHA_NAME);
 
 	if(gtk_init_check(&argc, &argv))
 	{

@@ -35,7 +35,7 @@
 
 G_BEGIN_DECLS
 
-#if defined(HAVE_CONFIG_H) || defined(WNI_INDEPENDENT_DEBUG)
+#ifdef WNI_INDEPENDENT_DEBUG
 
 #	if DEBUG_LEVEL >= 1
 #		define G_DEBUG(...) g_debug(__VA_ARGS__)
@@ -50,7 +50,7 @@ G_BEGIN_DECLS
 #		define G_PRINTF(...) g_printf(__VA_ARGS__)
 #	endif		/* DEBUG_LEVEL >= 3 */
 
-#endif		/* HAVE_CONFIG_H */
+#endif		/* WNI_INDEPENDENT_DEBUG */
 
 #ifndef __noop
 #define __noop(...) ((void) 0)

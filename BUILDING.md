@@ -1,17 +1,16 @@
 # Building Artha
 
-Artha is built with **xmake** (see `xmake.lua`); the autotools build has been
-removed from this tree. This document covers building, installing and
-packaging locally. Nothing here is published anywhere; the flatpak is for
-local testing only.
+Artha is built with **xmake** (see `xmake.lua`). This document covers
+building, installing and packaging locally. Nothing here is published
+anywhere; the flatpak is for local testing only.
 
 ## Dependencies (deps.json — single source of truth)
 
 `deps.json` (repo root) is the one authoritative dependency file:
 
 - `pc_minimum` — minimum versions enforced at configure time (read-only
-  pkg-config `--modversion`), formerly `configure.ac`'s `PKG_CHECK_MODULES`.
-  `xmake.lua` reads this; no version list is duplicated there.
+  pkg-config `--modversion`). `xmake.lua` reads this; no version list is
+  duplicated there.
 - `runtime` / `build_tool` / `flatpak` — the flatpak pins:
   `org.freedesktop.Platform`/`Sdk` runtime version, the prebuilt xmake
   tool, and the from-source module pins (wordnet, dbus-glib, gtk2).
@@ -55,9 +54,8 @@ directory of the project root:
 
 A plain `xmake` binary uses the default prefix `/usr/local`, i.e. it looks
 for `gui.glade`/`artha.png` in `/usr/local/share/artha` and
-`/usr/local/share/pixmaps` — same semantics as the old autotools build
-with no `--prefix`. To run the binary without installing into the system,
-stage it locally:
+`/usr/local/share/pixmaps`. To run the binary without installing into
+the system, stage it locally:
 
 ```sh
 xmake f --prefix="$PWD/sandbox/stage"
@@ -66,7 +64,7 @@ xmake install -o "$PWD/sandbox/stage"
 ./sandbox/stage/bin/artha
 ```
 
-`xmake install` lays out the same tree the autotools build produced:
+`xmake install` lays out:
 
     bin/artha  share/applications/artha.desktop  share/artha/gui.glade
     share/man/man1/artha.1  share/pixmaps/artha.png
@@ -75,27 +73,24 @@ xmake install -o "$PWD/sandbox/stage"
 
 - Dependencies are **not** upgraded, downloaded, replaced or installed.
   Only read-only pkg-config metadata queries are used (`--cflags`,
-  `--libs`, `--modversion`); minimum versions enforced (`gtk+-2.0 >= 2.24`,
-  `glib-2.0 >= 2.22`, `dbus >= 0.60`) are the ones the old autotools
-  build enforced, now read from `deps.json` (`pc_minimum`).
-- WordNet has no `.pc` file; it is linked with `-lwordnet`, exactly as
-  the old build did. Shared vs. static flavour is the system's choice.
+  `--libs`, `--modversion`); minimum versions (`gtk+-2.0 >= 2.24`,
+  `glib-2.0 >= 2.22`, `dbus >= 0.60`) are read from `deps.json`
+  (`pc_minimum`).
+- WordNet has no `.pc` file; it is linked with `-lwordnet`. Shared vs.
+  static flavour is the system's choice.
 - `libwni` (built from `src/wni.c`, sources inside this project) is an
   xmake **static** target and is archived into the binary. No shared
   `libwni` is produced or installed. System libraries stay dynamic.
-- `config.h` is gone; the macros it carried are passed as `-D` defines
-  (`PACKAGE*`, `APP_DIR`, `ICON_DIR`, `DBUS_AVAILABLE`, `X11_AVAILABLE`,
-  deprecated-API guards), which is all the sources reference. Debug
-  output stays off by default, as with the old build without
-  `--enable-debug`.
+- Package metadata is passed as `-D` defines (`ARTHA_*`, `APP_DIR`,
+  `ICON_DIR`, `DBUS_AVAILABLE`, `X11_AVAILABLE`, deprecated-API guards).
+  Debug output stays off by default.
 
 ## What is not migrated / leftovers
 
-- The autotools build is **gone**; xmake is the only build system.
-  `README` points here for build instructions.
-- Windows (Win32) build: mirrored from the old `src/Makefile.am` (shared
-  `libnotify.dll` from `src/libnotify.c`, `app_icon.rc` /
-  `libnotify_ver.rc`, now self-contained — no `config.h`), **untested**.
+- xmake is the only build system. `README` points here for build
+  instructions.
+- Windows (Win32) build: shared `libnotify.dll` from `src/libnotify.c`,
+  `app_icon.rc` / `libnotify_ver.rc` (self-contained), **untested**.
 - `xmake install` does not install `libwni`.
 
 ## Flatpak (local exploration)

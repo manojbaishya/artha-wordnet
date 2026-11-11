@@ -43,10 +43,6 @@ ________________________________________________
 */
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* Exclude rarely-used stuff from Windows headers */
 #define WIN32_LEAN_AND_MEAN
 

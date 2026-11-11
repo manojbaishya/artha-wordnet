@@ -1,17 +1,15 @@
 -- xmake.lua - Artha Thesaurus (xmake build)
 --
--- Replaces the autotools build (configure.ac + */Makefile.am), which
--- has been removed from this tree.
+-- xmake is the only build system for this tree.
 --
 -- Design notes
 -- ------------
--- * Dependencies are NOT upgraded and NOT replaced: the exact same
---   system libraries used by the autotools build are used here, via
---   read-only pkg-config metadata queries (or -l flags for WordNet).
+-- * Dependencies are NOT upgraded and NOT replaced: the system
+--   libraries are used here, via read-only pkg-config metadata queries
+--   (or -l flags for WordNet).
 --   No xmake package downloads, no installs, no system changes.
---   Enforced minimum versions live in deps.json (repo root, `pc_minimum`)
---   and are the ones configure.ac enforced: gtk+-2.0 >= 2.24,
---   glib-2.0 >= 2.22, dbus-1 >= 0.60, dbus-glib-1 >= 0.60.
+--   Enforced minimum versions live in deps.json (repo root, `pc_minimum`):
+--   gtk+-2.0 >= 2.24, glib-2.0 >= 2.22, dbus-1 >= 0.60, dbus-glib-1 >= 0.60.
 --   deps.json is the single source of truth for dependency pins:
 --   tools/gen_flatpak_manifest.py reads the same file to emit
 --   flatpak/org.artha.Artha.json.
@@ -21,15 +19,15 @@
 -- * System libraries (gtk, glib, dbus, X11, wordnet, ...) stay dynamic;
 --   they are not checked beyond pkg-config metadata reads and are not
 --   modified or replaced.
--- * Build artifacts are written to ./sandbox (gitignored). The legacy
---   autotools build was removed; xmake is the only build system.
+-- * Build artifacts are written to ./sandbox (gitignored); xmake is
+--   the only build system.
 --
 -- Usage
 -- -----
 --   xmake                       # configure + build into ./sandbox
 --   xmake f -m debug && xmake   # debug build (mode is a configure option)
 --   xmake f --prefix=/opt/artha # override install prefix (default /usr/local,
---                               # autotools-compatible APP_DIR/ICON_DIR)
+--                               # APP_DIR/ICON_DIR layout)
 --   xmake install -o /opt/artha # install into /opt/artha (bin, share/...)
 --
 -- APP_DIR/ICON_DIR (where gui.glade / artha.png are looked up at runtime)
@@ -57,7 +55,7 @@ set_config("builddir", "sandbox")
 option("prefix")
     set_default("/usr/local")
     set_showmenu(true)
-    set_description("Install prefix (autotools-compatible: APP_DIR=<prefix>/share/artha, ICON_DIR=<prefix>/share/pixmaps)")
+    set_description("Install prefix (APP_DIR=<prefix>/share/artha, ICON_DIR=<prefix>/share/pixmaps)")
 
 -- NB: during the very first `xmake f`, get_config() may not see the
 -- cached option yet; fall back to the option's default.
@@ -65,7 +63,7 @@ local prefix = get_config("prefix") or "/usr/local"
 local app_dir = is_plat("windows") and "." or (prefix .. "/share/artha")
 local icon_dir = is_plat("windows") and "." or (prefix .. "/share/pixmaps")
 
--- Common flags (were AM_CFLAGS in the autotools build)
+-- Common flags
 local common_cxflags = {
     "-Wall",
     "-Wextra",
@@ -81,13 +79,11 @@ local common_defines = {
     "GDK_DISABLE_DEPRECATED=1",
     "GDK_PIXBUF_DISABLE_DEPRECATED=1",
     "G_DISABLE_DEPRECATED=1",
-    -- package metadata macros formerly provided by config.h
-    'PACKAGE="artha"',
-    'PACKAGE_NAME="Artha"',
-    'PACKAGE_TARNAME="artha"',
-    'PACKAGE_VERSION="1.0.5"',
-    'PACKAGE_URL="http://artha.sourceforge.net/"',
-    'VERSION="1.0.5"',
+    -- package metadata defines fed to the sources
+    'ARTHA_NAME="Artha"',
+    'ARTHA_TARNAME="artha"',
+    'ARTHA_VERSION="1.0.5"',
+    'ARTHA_URL="http://artha.sourceforge.net/"',
     'APP_DIR="' .. app_dir .. '"',
     'ICON_DIR="' .. icon_dir .. '"',
 }
@@ -212,8 +208,8 @@ target("artha")
         -- system libraries stay dynamic; never downloaded, never replaced
         add_syslinks("X11", "dbus-1", "dbus-glib-1")
         -- WordNet has no pkg-config file on common distros; -lwordnet is
-        -- what configure.ac used. Static or shared flavour is the
-        -- system's choice; the system is untouched.
+        -- the link this project has always used. Static or shared flavour
+        -- is the system's choice; the system is untouched.
         add_syslinks("wordnet")
         on_load(pkgconfig_on_load({
             packages = {"glib-2.0", "gmodule-2.0", "gtk+-2.0", "dbus-1", "dbus-glib-1", "x11"},

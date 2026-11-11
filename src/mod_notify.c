@@ -24,10 +24,6 @@
  */
 
 
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
-
 #include "mod_notify.h"
 #include "wni.h"
 #include <gmodule.h>
@@ -126,13 +122,13 @@ gboolean mod_notify_init()
 		if(NULL != fn_notify_init && NULL != fn_notify_uninit && NULL != fn_notify_notification_new &&
 		NULL != fn_notify_notification_update && NULL != fn_notify_notification_show && NULL != fn_notify_notification_close)
 		{
-			if(notify_init(PACKAGE_NAME))
+			if(notify_init(ARTHA_NAME))
 			{
                 notify_inited = TRUE;
 
 				/* initialize summary as Artha (Package Name)
 				   this will, however, be modified to the looked up word before display */
-				mod_notifier = notify_notification_new(PACKAGE_NAME, NULL, "gtk-dialog-info");
+				mod_notifier = notify_notification_new(ARTHA_NAME, NULL, "gtk-dialog-info");
                 if(mod_notifier)
                 {
                     G_MESSAGE("Notification module successfully loaded");

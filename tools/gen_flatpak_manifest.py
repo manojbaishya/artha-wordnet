@@ -15,10 +15,13 @@ guard (e.g. for CI): it fails if the committed manifest does not match a
 fresh generation from deps.json.
 
 Module choices (rationale, unchanged from the hand-written .yml):
+  The "buildsystem": "autotools" values name the upstream tarballs' own
+  build systems (dbus-glib and GTK+ 2 are autotools projects); this
+  project itself contains no autotools files or references.
   xmake    - the build system; built here for /app and removed in the
              final cleanup (the app itself does not depend on xmake).
   wordnet  - upstream Princeton WordNet 3.0; only lib + headers + dict
-             data are installed. The upstream configure requires Tcl/Tk
+             data are installed. The upstream build requires Tcl/Tk
              (for the wishwn GUI) which we deliberately do not build, so
              the library and data are installed directly with make-free
              commands (buildsystem: simple). DEFAULTPATH is pinned to

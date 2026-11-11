@@ -27,10 +27,6 @@
  */
 
 
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
-
 #ifdef X11_AVAILABLE
 
 #include <gdk/gdk.h>
@@ -38,14 +34,6 @@
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-
-#  if DEBUG_LEVEL >= 2
-#     define TRACE(x) x
-#  endif
-#endif
 
 #ifndef TRACE
 #  define TRACE(x) do {} while (FALSE);
