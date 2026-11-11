@@ -74,7 +74,7 @@ version 0.9.1 (May 17, 2009):
 	  status icon can be used to bring up the application.
 	* Loading message set on status bar when indexing.
 	* Startup Notification to the Desktop manager fixed.
-	* Configure.ac and Makefile.am modified to suit building WordNet from source.
+	* Build files modified to suit building WordNet from source.
 
 version 0.9.0 (Apr 26, 2009):
 	* Regex based search feature is now implemented. Accepted pattern will be 
@@ -112,8 +112,8 @@ version 0.7.2 (Jan 31, 2009):
 	* Moved to .png from .svg because it is not supported in a few distros.
 	* Preferences (conf file) are now saved on load pref., if its a first run.
 	* Preferences are now saved on every setting change, not on app. exit.
-	* Fixed issues in configure script.
-	* Changed automake script to sync with configure script.
+	* Fixed issues in the build script.
+	* Changed build files to stay in sync with each other.
 	* Both Toolbar button and menu now reads "Notify", earlier it was Notify 
 	  and Notifications.
 	* All characters other than alpha numeric, -, _ and blank space are stripped
@@ -158,7 +158,7 @@ version 0.6.2:
 version 0.6.1:
 	* Relatives List double-click/return handled, to jump to the corresponding term.
 	* About box created, licences & credits mentioned and made part of the GUI.
-	* Autoconf and automake employed.
+	* Automated build system employed.
 	* ChangeLog, NEWS, TODO, README, COPYING & AUTHORS are added.
 
 version 0.6.0:

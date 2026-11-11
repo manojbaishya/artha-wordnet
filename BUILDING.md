@@ -35,10 +35,18 @@ The generated manifest is committed; `--check` is the drift guard.
   - WordNet development files (`wn.h` + `libwordnet`; on Debian: `wordnet-dev`)
 - `libenchant-2` and `libnotify` are **not** build-time dependencies
   (loaded at runtime via `dlopen()`; Artha runs fine without them)
-- On this machine, linuxbrew's `ld`/`as`/`ar` shadow the system ones and
-  misresolve glibc symbols. Invoke xmake as
-  `PATH=/usr/bin:$PATH xmake ...` or pass `xmake f --ld=/usr/bin/ld --as=/usr/bin/as --ar=/usr/bin/ar`.
-  (A host quirk, deliberately not baked into `xmake.lua`.)
+- On this machine, linuxbrew's `ld`/`as`/`ar` shadow the system ones in
+  `PATH` and gcc's `collect2` then resolves `ld` from linuxbrew, which
+  cannot see `/usr/lib/x86_64-linux-gnu` and mis-links system libraries
+  (undefined `pcre_*`, `Xcursor*`, `__isoc23_*@GLIBC_2.38`, ...).
+  Invoke xmake as `PATH=/usr/bin:$PATH xmake ...`.
+  Note: passing `--ld=/usr/bin/ld --as=/usr/bin/as --ar=/usr/bin/ar` to
+  `xmake config` does NOT help — the configure-time probes then fail and
+  gcc still prefers linuxbrew's `ld`. `PATH` order is the only fix.
+  For CLion, the xmake toolkit (`options/xmakeToolkits.xml`) is pointed
+  at `~/.local/bin/clion-xmake`, a wrapper that forces `/usr/bin` first
+  and execs `/usr/bin/xmake`; this keeps the quirk out of `xmake.lua`
+  and out of this repository.
 
 ## Verified on this machine (2026-11-11)
 

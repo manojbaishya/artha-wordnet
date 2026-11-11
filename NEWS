@@ -76,15 +76,15 @@
 	comes to the foreground, but also grab's the foucs properly. gtk-builder-convert tool dependency 
 	is also removed since the latest release of Glade (glade3) gives XML output that is directly 
 	parse-able by GtkBuilder. Cluttered welcome message boxes are now removed since the hotkey is 
-	now customizable. Overall code is now restructured with a few other minor bugs fixes. Autoconf 
-	and Automake files had a uninstall issue which is fixed and both the files are now cleaner with 
+	now customizable. Overall code is now restructured with a few other minor bugs fixes. The build
+	files had a uninstall issue which is fixed and they are now cleaner with 
 	lesser number of checks for development headers. All in all it's a vital release with a major 
 	feature addition and lot of changes to code and build structure; this is the actual release 
 	that truly meets all the primary goals set during Artha's genesis :)
 
 0.9.1 (May 17, 2009)
 	Trying Artha on Fedora showed that searching for library wordnet fails when one builds WordNet 
-	from source as it gives a archive library output libWN.a and configure looks for libwordnet.so.
+	from source as it gives a archive library output libWN.a and the build looked for libwordnet.so.
 	This is now corrected. When index.sense is missing during the start up, the wordnet_terms var. 
 	remains NULL and performing a regex search on it leads to a crash which is now fixed. Artha 
 	will throw an error saying that the index file was missing on startup. It was decided against 
@@ -124,8 +124,8 @@
 	for notify_init's return value is now done, and when it fails, Artha refrains from showing 
 	the option at all to the user. Likewise, svg was not supported for menu icons and status bar 
 	icon, hence the svg pixbuf is now replace by a png, as it is better supported on most systems. 
-	Autotools scripts, both configure and makefile had bugs in finding the library availablity. 
-	Hence moved all AC_CHECK_LIBs to pkg-config based checks. When the version number is found 
+	The build scripts had bugs in finding the library availablity. 
+	Hence moved all library checks to pkg-config based checks. When the version number is found 
 	incremented (from the conf file), the user is thanked for updating. Preferences are now saved 
 	whenever a setting is toggled and not on app. exit. All characters not recognised by WordNet 
 	(characters other than alpha, num, -, , _) are stripped off the selection text. Summoning 
@@ -159,7 +159,7 @@
 0.6.3:
 	Finally, a bare bones man page is added to the dist! :) gtk_show_uri(), which is present since 
 	GTK+ 2.14, is required for email/url hooks in About screen, all other functions used will build 
-	againt 2.12. Hence I created a macro using autoconf. If compiled against libgtk 2.14 or greater, 
+	againt 2.12. Hence I added a build-time check. If compiled against libgtk 2.14 or greater, 
 	email and url hooks in About screen will be present from now on.
 
 0.6.2:
@@ -170,7 +170,7 @@
 0.6.1:
 	Double clicking or pressing Enter/Return key on a relative from any of the relative list, now 
 	jumps to that word's definition search. About box, credits & licence are now mentioned in the 
-	GUI. Autoconf and automake are now used to automate the building process in diff. environments. 
+	GUI. The build process is now automated across diff. environments. 
 	Files COPYING, TODO, AUTHORS, NEWS, INSTALL, README & ChangeLog are added to the project.
 
 0.6:
