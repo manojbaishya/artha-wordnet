@@ -145,10 +145,11 @@ gboolean suggestions_init()
 		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_suggest), (gpointer *) &enchant_dict_suggest);
 		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_free_string_list), (gpointer *) &enchant_dict_free_string_list);
 
-		// in older version of Enchant, enchant_dict_free_string_list might be absent, they will have the
-		// now deprecated function enchant_dict_free_suggestions
+		// in older version of Enchant, enchant_dict_free_string_list might be absent;
+		// fall back to the now deprecated enchant_dict_free_suggestions, which has
+		// the same calling convention (EnchantDict *, gchar **)
 		if(NULL == enchant_dict_free_string_list)
-			g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_free_string_list), (gpointer *) &enchant_dict_free_string_list);
+			g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_free_suggestions), (gpointer *) &enchant_dict_free_string_list);
 
 		// check if we have obtained the essential function pointers
 		if(NULL != enchant_broker_init && NULL != enchant_broker_free && NULL != enchant_broker_dict_exists &&

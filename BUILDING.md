@@ -189,6 +189,18 @@ it. Hard requirements on this machine/host:
 - `flatpak build` runs the sandboxed app directly from the build output;
   the result was smoke-verified on Xephyr (`:90`) with metacity: window
   renders, app alive, WordNet index loads.
+- Running the host-built binary manually (e.g. on Xephyr): artha reads
+  `$XDG_CONFIG_HOME/artha.conf` (or `$HOME/.config/artha.conf`), and
+  startup unconditionally rewrites it (the "after all setting based
+  loads" save). To avoid touching the real user config, point
+  `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` and `HOME` at a
+  scratch dir, e.g. `HOME=/tmp/artha-home XDG_CONFIG_HOME=/tmp/artha-xdg-config ... artha`.
+  (A bare `HOME=/tmp/...` is not enough when the caller exports
+  `XDG_CONFIG_HOME`; g_get_user_config_dir() prefers it over `HOME`.)
+- This checkout may live inside another configured xmake project (e.g. a
+  git worktree under `.opencode/worktrees/`). If the outer tree is also
+  configured, a bare `xmake` builds the outer project and shadows this
+  one; build this tree with `xmake f -P .` / `xmake -P .`.
 
 Permissions (`finish-args`): `--share=ipc`, `--socket=x11`,
 `--device=dri` (Artha is a pure X11 app), `--talk-name=org.freedesktop.Notifications`

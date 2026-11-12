@@ -225,7 +225,9 @@ static int x_error_handler(Display *xdisplay, XErrorEvent *xevent)
 #endif	// X11_AVAILABLE
 
 /* generic non-modal message dialog: present + destroy on response.
-   (GTK4 has no gtk_dialog_run; nested main loops are gone.) */
+   (GTK4 has no gtk_dialog_run; nested main loops are gone.)
+   GTK >= 4.10: GtkMessageDialog is deprecated; use GtkAlertDialog. */
+#if !GTK_CHECK_VERSION(4, 10, 0)
 static void message_dialog_destroy(GtkWidget *dialog, gint response, gpointer user_data)
 {
 	(void) response;
@@ -233,11 +235,11 @@ static void message_dialog_destroy(GtkWidget *dialog, gint response, gpointer us
 
 	gtk_window_destroy(GTK_WINDOW(dialog));
 }
+#endif
 
 static void show_message_dialog(GtkWindow *parent, GtkMessageType type, const gchar *title,
 				 const gchar *body_format, ...)
 {
-	GtkWidget *dialog = NULL;
 	gchar *body = NULL;
 	va_list args;
 
@@ -245,15 +247,28 @@ static void show_message_dialog(GtkWindow *parent, GtkMessageType type, const gc
 	body = g_strdup_vprintf(body_format, args);
 	va_end(args);
 
-	dialog = gtk_message_dialog_new(parent,
-				       GTK_DIALOG_DESTROY_WITH_PARENT,
-				       type,
-				       GTK_BUTTONS_OK,
-				       "%s",
-				       body);
-	g_object_set(dialog, "title", title, NULL);
-	g_signal_connect(dialog, "response", G_CALLBACK(message_dialog_destroy), NULL);
-	gtk_window_present(GTK_WINDOW(dialog));
+#if GTK_CHECK_VERSION(4, 10, 0)
+	(void) type;
+	{
+		GtkAlertDialog *dialog = gtk_alert_dialog_new("%s", title);
+
+		gtk_alert_dialog_set_detail(dialog, body);
+		gtk_alert_dialog_show(dialog, parent);
+		g_object_unref(dialog);
+	}
+#else
+	{
+		GtkWidget *dialog = gtk_message_dialog_new(parent,
+						       GTK_DIALOG_DESTROY_WITH_PARENT,
+						       type,
+						       GTK_BUTTONS_OK,
+						       "%s",
+						       body);
+		g_object_set(dialog, "title", title, NULL);
+		g_signal_connect(dialog, "response", G_CALLBACK(message_dialog_destroy), NULL);
+		gtk_window_present(GTK_WINDOW(dialog));
+	}
+#endif
 
 	g_free(body);
 }
@@ -2359,28 +2374,13 @@ static void clear_history(GSimpleAction *action, GVariant *params, gpointer user
 	history_file = NULL;
 }
 
-/* second stage: the user picked a file; do the copy and report the outcome */
-static void save_history_copy_done(GtkNativeDialog *dialog, gint response, gpointer user_data)
+/* the user picked a destination file; copy the history there and report the outcome */
+static void history_save_copy(GFile *current_file)
 {
-	GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
 	GError *err = NULL;
-	GFile *history_file = NULL, *dest_file = NULL, *current_file = NULL;
+	GFile *history_file = NULL, *dest_file = NULL;
 	gchar *hist_file_path = NULL;
 	gboolean saved = FALSE;
-
-	(void) user_data;
-
-	if(response != GTK_RESPONSE_ACCEPT)
-	{
-		g_object_unref(dialog);
-		return;
-	}
-
-	current_file = gtk_file_chooser_get_file(chooser);
-	g_object_unref(dialog);
-
-	if(NULL == current_file)
-		return;
 
 	hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 	history_file = g_file_new_for_path(hist_file_path);
@@ -2410,27 +2410,86 @@ static void save_history_copy_done(GtkNativeDialog *dialog, gint response, gpoin
 
 	g_object_unref(history_file);
 	g_object_unref(dest_file);
-	g_object_unref(current_file);
 	g_free(hist_file_path);
 }
 
+/* second stage: the user picked a file; GTK >= 4.10 uses GtkFileDialog */
+#if GTK_CHECK_VERSION(4, 10, 0)
+static void save_history_copy_done(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+	GFile *current_file = NULL;
+	GError *err = NULL;
+
+	(void) user_data;
+
+	current_file = gtk_file_dialog_save_finish(GTK_FILE_DIALOG(source), result, &err);
+	if(NULL == current_file)
+	{
+		/* a dismissal is not an error; stay silent */
+		if(err != NULL && !g_error_matches(err, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+			show_message_dialog(NULL, GTK_MESSAGE_WARNING, STR_HISTORY_FILE_SAVE_FAILURE_TITLE,
+					    "%s", err->message);
+		g_clear_error(&err);
+		return;
+	}
+
+	history_save_copy(current_file);
+	g_object_unref(current_file);
+}
+#else
+static void save_history_copy_done(GtkNativeDialog *dialog, gint response, gpointer user_data)
+{
+	GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
+	GFile *current_file = NULL;
+
+	(void) user_data;
+
+	if(response != GTK_RESPONSE_ACCEPT)
+	{
+		g_object_unref(dialog);
+		return;
+	}
+
+	current_file = gtk_file_chooser_get_file(chooser);
+	g_object_unref(dialog);
+
+	if(NULL == current_file)
+		return;
+
+	history_save_copy(current_file);
+	g_object_unref(current_file);
+}
+#endif
+
 /* save the lookup history to a file the user picks
-   (GAction callback; GTK4 has no gtk_dialog_run - the flow is async) */
+   (GAction callback; GTK4 has no gtk_dialog_run - the flow is async)
+   GTK >= 4.10: GtkFileChooserNative is deprecated; use GtkFileDialog */
 static void save_history_to_file(GSimpleAction *action, GVariant *params, gpointer user_data)
 {
-	GtkFileChooserNative *dialog = NULL;
-
 	(void) action;
 	(void) params;
 	(void) user_data;
 
-	dialog = gtk_file_chooser_native_new("Save As",
-					      NULL,
-					      GTK_FILE_CHOOSER_ACTION_SAVE,
-					      "_Save",
-					      "_Cancel");
-	g_signal_connect(dialog, "response", G_CALLBACK(save_history_copy_done), NULL);
-	gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+#if GTK_CHECK_VERSION(4, 10, 0)
+	{
+		GtkFileDialog *dialog = gtk_file_dialog_new();
+
+		gtk_file_dialog_set_title(dialog, "Save As");
+		gtk_file_dialog_save(dialog, NULL, NULL, save_history_copy_done, NULL);
+		g_object_unref(dialog);
+	}
+#else
+	{
+		GtkFileChooserNative *dialog = gtk_file_chooser_native_new("Save As",
+								      NULL,
+								      GTK_FILE_CHOOSER_ACTION_SAVE,
+								      "_Save",
+								      "_Cancel");
+
+		g_signal_connect(dialog, "response", G_CALLBACK(save_history_copy_done), NULL);
+		gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+	}
+#endif
 }
 
 static void popover_closed(GtkPopover *popover, gpointer user_data)
@@ -3553,7 +3612,6 @@ static void destructor(GtkBuilder *gui_builder)
 
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code)
 {
-	GtkWidget *msg_dialog = NULL;
 	GtkMessageType msg_type = GTK_MESSAGE_INFO;
 	gchar *str_body = NULL;
 	gchar *str_temp1 = NULL, *str_temp2 = NULL;
@@ -3596,16 +3654,28 @@ static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_co
 		msg_type = GTK_MESSAGE_WARNING;
 	}
 
-	msg_dialog = gtk_message_dialog_new(parent_window ? GTK_WINDOW(parent_window) : NULL,
-					       GTK_DIALOG_DESTROY_WITH_PARENT,
-					       msg_type,
-					       GTK_BUTTONS_OK,
-					       "%s",
-					       str_body);
+#if GTK_CHECK_VERSION(4, 10, 0)
+	{
+		GtkAlertDialog *alert = gtk_alert_dialog_new("%s", ARTHA_NAME);
 
-	g_object_set(msg_dialog, "title", ARTHA_NAME, NULL);
-	g_signal_connect(msg_dialog, "response", G_CALLBACK(message_dialog_destroy), NULL);
-	gtk_window_present(GTK_WINDOW(msg_dialog));
+		(void) msg_type;
+		gtk_alert_dialog_set_detail(alert, str_body);
+		gtk_alert_dialog_show(alert, parent_window ? GTK_WINDOW(parent_window) : NULL);
+		g_object_unref(alert);
+	}
+#else
+	{
+		GtkWidget *msg_dialog = gtk_message_dialog_new(parent_window ? GTK_WINDOW(parent_window) : NULL,
+							       GTK_DIALOG_DESTROY_WITH_PARENT,
+							       msg_type,
+							       GTK_BUTTONS_OK,
+							       "%s",
+							       str_body);
+		g_object_set(msg_dialog, "title", ARTHA_NAME, NULL);
+		g_signal_connect(msg_dialog, "response", G_CALLBACK(message_dialog_destroy), NULL);
+		gtk_window_present(GTK_WINDOW(msg_dialog));
+	}
+#endif
 
 	if(str_temp1)
 	{

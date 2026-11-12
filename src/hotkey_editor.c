@@ -74,6 +74,10 @@ static const guint forbidden_keyvals[] =
 gboolean grab_ungrab_with_ignorable_modifiers(ArthaAccelKey *binding, gboolean grab);
 extern ArthaAccelKey app_hotkey;
 
+/* present a modal-ish warning dialog tied to the hotkey editor window;
+   GTK4 has no gtk_dialog_run; GTK >= 4.10 uses GtkAlertDialog
+   (GtkMessageDialog is deprecated) */
+#if !GTK_CHECK_VERSION(4, 10, 0)
 static void hk_message_dialog_destroy(GtkWidget *dialog, gint response, gpointer user_data)
 {
 	(void) response;
@@ -81,26 +85,36 @@ static void hk_message_dialog_destroy(GtkWidget *dialog, gint response, gpointer
 
 	gtk_window_destroy(GTK_WINDOW(dialog));
 }
+#endif
 
-/* present a modal-ish warning dialog tied to the hotkey editor window;
-   GTK4 has no gtk_dialog_run */
 static void hk_show_message(GtkWidget *view, const gchar *title, const gchar *body_format,
 			     const gchar *arg)
 {
 	GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(view));
 	GtkWindow *parent = GTK_IS_WINDOW(root) ? GTK_WINDOW(root) : NULL;
-	GtkWidget *msg_dialog = NULL;
-
 	gchar *body = g_strdup_printf(body_format, arg);
-	msg_dialog = gtk_message_dialog_new(parent,
-					    GTK_DIALOG_DESTROY_WITH_PARENT,
-					    GTK_MESSAGE_WARNING,
-					    GTK_BUTTONS_OK,
-					    "%s",
-					    body);
-	g_object_set(msg_dialog, "title", title, NULL);
-	g_signal_connect(msg_dialog, "response", G_CALLBACK(hk_message_dialog_destroy), NULL);
-	gtk_window_present(GTK_WINDOW(msg_dialog));
+
+#if GTK_CHECK_VERSION(4, 10, 0)
+	{
+		GtkAlertDialog *alert = gtk_alert_dialog_new("%s", title);
+
+		gtk_alert_dialog_set_detail(alert, body);
+		gtk_alert_dialog_show(alert, parent);
+		g_object_unref(alert);
+	}
+#else
+	{
+		GtkWidget *msg_dialog = gtk_message_dialog_new(parent,
+							    GTK_DIALOG_DESTROY_WITH_PARENT,
+							    GTK_MESSAGE_WARNING,
+							    GTK_BUTTONS_OK,
+							    "%s",
+							    body);
+		g_object_set(msg_dialog, "title", title, NULL);
+		g_signal_connect(msg_dialog, "response", G_CALLBACK(hk_message_dialog_destroy), NULL);
+		gtk_window_present(GTK_WINDOW(msg_dialog));
+	}
+#endif
 	g_free(body);
 }
 

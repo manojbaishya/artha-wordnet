@@ -1,10 +1,14 @@
 Unreleased (Nov 12, 2026)
 	Migration round: latest-major dependencies and the Flatpak target system.
 	- GTK+ 2 -> GTK 4 (4.6 minimum; GNOME 51's GTK 4.24.1 is the reference
-	  environment). Stock GTK APIs deprecated in 4.10 that were kept for
-	  reach (GtkMessageDialog, GtkFileChooserDialog/GtkFileChooserNative,
-	  GtkCellRendererAccel, GtkComboBox, GtkTreeView/GtkTreeModel) are
-	  called as-is; migration to their successors is a separate task.
+	  environment). APIs deprecated in 4.10 are handled per-API:
+	  GtkMessageDialog -> GtkAlertDialog and GtkFileChooserNative ->
+	  GtkFileDialog are migrated behind GTK_CHECK_VERSION(4, 10, 0), with
+	  the legacy widgets kept on 4.6 (the jammy host build). The
+	  GtkComboBox/GtkTreeView/GtkTreeModel/GtkCellRenderer*/GtkEntryCompletion
+	  stack (including gui.glade) is still called as-is; migrating to the
+	  GtkColumnView/GtkDropDown/GtkStringList successors is a separate,
+	  larger task. GtkCellRendererAccel is not used anywhere.
 	- dbus-glib -> GDBus (part of GLib). The single-instance logic uses a
 	  session-bus name (org.artha.unique) with RequestName; on bus failure
 	  the app degrades to multi-instance with a warning instead of aborting.
@@ -26,7 +30,15 @@ Unreleased (Nov 12, 2026)
 	  message window) is not yet ported; global hotkeys on Windows are
 	  unavailable in this build. XSynchronize failure no longer calls g_error.
 	- gtk_dialog_run is gone (nested main loops removed): all message
-	  dialogs present non-modally and destroy on "response".
+	  dialogs present non-modally and destroy on "response". On GTK >= 4.10
+	  they are GtkAlertDialog (message = former title, detail = former
+	  body); the file chooser is GtkFileDialog (save) with the same copy
+	  and reporting flow.
+	- Suggestions (dlopen of libenchant): the enchant_dict_free_string_list
+	  fallback now actually probes for the deprecated
+	  enchant_dict_free_suggestions symbol instead of re-probing the
+	  same missing symbol (the fallback was dead code; on hosts with
+	  libenchant < 2.0 suggestions were silently disabled).
 	- GtkStatusbar is gone in GTK4; the status text moved to a plain
 	  GtkLabel in the main window (same messages, same contexts).
 	- Toolbar rebuilt as a GtkBox of buttons (icon names from the freedesktop
