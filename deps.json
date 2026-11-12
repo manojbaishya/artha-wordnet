@@ -2,17 +2,15 @@
   "$comment": "Artha dependency source of truth. xmake.lua reads `pc_minimum` and enforces the floors at configure time (read-only pkg-config --modversion queries). tools/gen_flatpak_manifest.py reads `runtime`, `build_tool` and `flatpak` and emits flatpak/org.artha.Artha.json. Do NOT edit the generated .json manifest by hand: edit this file and re-run `python3 tools/gen_flatpak_manifest.py` (or `--check` to verify it is in sync).",
 
   "pc_minimum": {
-    "glib-2.0": "2.22",
-    "gmodule-2.0": "2.22",
-    "gtk+-2.0": "2.24",
-    "dbus-1": "0.60",
-    "dbus-glib-1": "0.60"
+    "glib-2.0": "2.66",
+    "gmodule-2.0": "2.66",
+    "gtk4": "4.6"
   },
 
   "runtime": {
-    "platform": "org.freedesktop.Platform",
-    "sdk": "org.freedesktop.Sdk",
-    "version": "25.08"
+    "platform": "org.gnome.Platform",
+    "sdk": "org.gnome.Sdk",
+    "version": "51"
   },
 
   "build_tool": {
@@ -31,16 +29,10 @@
       "sha256": "6c492d0c7b4a40e7674d088191d3aa11f373bb1da60762e098b8ee2dda96ef22"
     },
     {
-      "name": "dbus-glib",
-      "version": "0.112",
-      "url": "https://dbus.freedesktop.org/releases/dbus-glib/dbus-glib-0.112.tar.gz",
-      "sha256": "7d550dccdfcd286e33895501829ed971eeb65c614e73aadb4a08aeef719b143a"
-    },
-    {
-      "name": "gtk2",
-      "version": "2.24.33",
-      "url": "https://download.gnome.org/sources/gtk+/2.24/gtk+-2.24.33.tar.xz",
-      "sha256": "ac2ac757f5942d318a311a54b0c80b5ef295f299c2a73c632f6bfb1ff49cc6da"
+      "name": "wordnet-dict",
+      "version": "3.1",
+      "url": "https://wordnetcode.princeton.edu/wn3.1.dict.tar.gz",
+      "sha256": "3f7d8be8ef6ecc7167d39b10d66954ec734280b5bdcd57f7d9eafe429d11c22a"
     }
   ]
 }

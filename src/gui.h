@@ -33,23 +33,34 @@
 #include <string.h>
 
 #ifdef X11_AVAILABLE
-#include <gdk/gdkx.h>
+#include <gdk/x11/gdkx.h>
 #include <X11/Xlib.h>
+#include <X11/keysymdef.h>
 #endif
 
 /* custom headers */
 #include "wni.h"
 #include "instance_handler.h"
-#include "eggaccelerators.h"
+#include "status_notifier.h"
 #include "hotkey_editor.h"
 #include "mod_notify.h"
 #include "tomboyutil.h"
+
+/* GTK4 removed GtkAccelKey (the accel-group subsystem is gone).
+   Artha keeps its own hotkey binding type with the same fields;
+   the preferences file stores key/mods/flags individually. */
+typedef struct
+{
+	guint		accel_key;
+	guint		accel_flags;
+	GdkModifierType	accel_mods;
+} ArthaAccelKey;
 
 /* pluggable module headers */
 #include "addons.h"
 
 #ifdef G_OS_WIN32
-#	include "gdk/gdkwin32.h"
+#	include <gdk/win32/gdkwin32.h>
 #	include "windows.h"
 #	include "shellapi.h"
 #	define KEY_COUNT 4
@@ -102,7 +113,8 @@
 #define CHKBTN_POLYSEMY			"chkBtnPolysemy"
 #define CHKBTN_STATUS			"chkBtnStatusIcon"
 #define CHKBTN_LAUNCH_MIN		"chkBtnLaunchMin"
-#define STATUS_ICON				"statusIcon"
+#define BUTTON_APPLY			"btnApply"
+#define BUTTON_CANCEL			"btnCancel"
 
 /* Relative IDs */
 
@@ -185,21 +197,21 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_MSG_WELCOME_TITLE		"Welcome to Artha!"
 #define STR_MSG_WELCOME_HOTKEY_HEADER	"Artha can be summoned with a hotkey when required. Selecting text in any window and pressing that (hotkey) combination \
 will pop up Artha with the selected text looked up."
-#define STR_MSG_WELCOME_ARBITRARY_SUCCEEDED	"Since this is the first launch an arbitrary hotkey <b>%s</b> is set."
+#define STR_MSG_WELCOME_ARBITRARY_SUCCEEDED	"Since this is the first launch an arbitrary hotkey %s is set."
 #ifdef G_OS_WIN32
 #define STR_MSG_WELCOME_HOTKEY_FOOTER	"This can be changed via the hotkey button in the toolbar."
 #else
 #define STR_MSG_WELCOME_HOTKEY_FOOTER	"This can be changed via the hotkey button in the toolbar.\n\nRefer manual ('man artha' in terminal) for detailed help."
 #endif
-#define STR_MSG_WELCOME_HOTKEY_FAILED	"Unable to set the previously chosen hotkey <b>%s</b> for Artha. This could be because of some other application \
+#define STR_MSG_WELCOME_HOTKEY_FAILED	"Unable to set the previously chosen hotkey %s for Artha. This could be because of some other application \
 registered with the same key combination."
 #define STR_MSG_HOTKEY_NOTSET		"You have enabled notifications; but notifications can only be shown upon pressing a hotkey combination which is \
 currently not set. It can be set via the hotkey button in the toolbar."
 
 #define STR_APP_TITLE		"Artha ~ The Open Thesaurus"
 
-#define STR_COPYRIGHT		"Copyright © 2009 Sundaram Ramaswamy\n\nWordNet 3.0 \
-Copyright 2006 by Princeton University.  All rights reserved."
+#define STR_COPYRIGHT		"Copyright © 2009 Sundaram Ramaswamy\n\nWordNet 3.1 \
+Copyright 2011 by Princeton University.  All rights reserved."
 
 #define STR_BUG_WEBPAGE		"http://launchpad.net/artha/+filebug"
 

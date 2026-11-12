@@ -4,19 +4,21 @@
 --
 -- Design notes
 -- ------------
--- * Dependencies are NOT upgraded and NOT replaced: the system
---   libraries are used here, via read-only pkg-config metadata queries
---   (or -l flags for WordNet).
+-- * Dependencies are NOT upgraded and NOT replaced beyond the GTK2→GTK4
+--   migration: the system libraries are used here, via read-only
+--   pkg-config metadata queries (or -l flags for WordNet).
 --   No xmake package downloads, no installs, no system changes.
 --   Enforced minimum versions live in deps.json (repo root, `pc_minimum`):
---   gtk+-2.0 >= 2.24, glib-2.0 >= 2.22, dbus-1 >= 0.60, dbus-glib-1 >= 0.60.
+--   gtk4 >= 4.6, glib-2.0 >= 2.66, gmodule-2.0 >= 2.66.
 --   deps.json is the single source of truth for dependency pins:
 --   tools/gen_flatpak_manifest.py reads the same file to emit
---   flatpak/org.artha.Artha.json.
+--   flatpak/org.artha.Artha.json. The flatpak base (org.gnome.Platform
+--   51) is the reference target system: GNOME 51 ships gtk4 4.24.1.
+--   GDBus (dbus) is part of glib; there is no dbus-1/dbus-glib-1 pin.
 -- * Libraries whose sources live inside this project (libwni) are built
 --   as a static library target and linked statically into the binary.
 --   No shared libwni is ever produced.
--- * System libraries (gtk, glib, dbus, X11, wordnet, ...) stay dynamic;
+-- * System libraries (gtk4, glib, X11, wordnet, ...) stay dynamic;
 --   they are not checked beyond pkg-config metadata reads and are not
 --   modified or replaced.
 -- * Build artifacts are written to ./sandbox (gitignored); xmake is
@@ -84,9 +86,7 @@ local common_cxflags = {
 }
 
 local common_defines = {
-    "GTK_DISABLE_DEPRECATED=1",
-    "GDK_DISABLE_DEPRECATED=1",
-    "GDK_PIXBUF_DISABLE_DEPRECATED=1",
+    -- (GTK_DISABLE_DEPRECATED/GDK_DISABLE_DEPRECATED are no-ops in GTK4)
     "G_DISABLE_DEPRECATED=1",
     -- package metadata defines fed to the sources
     'ARTHA_NAME="Artha"',
@@ -270,15 +270,16 @@ target("artha")
     set_default(true)
 
     add_files("src/gui.c", "src/mod_notify.c",
-              "src/suggestions.c", "src/hotkey_editor.c")
+              "src/suggestions.c", "src/hotkey_editor.c",
+              "src/status_notifier.c")
 
     if is_plat("windows") then
         add_files("src/app_icon.rc")
         add_defines("WINVER=0x0501", "_WIN32_WINDOWS=0x0501", "_WIN32_WINNT=0x0501")
         add_cxflags("-mwin32", "-DUNICODE", "-D_UNICODE", "-DNDEBUG")
     else
-        -- POSIX-only parts (X11 hotkey, tomboy util, dbus single-instance)
-        add_files("src/eggaccelerators.c", "src/tomboyutil.c",
+        -- POSIX-only parts (X11 hotkey grabs, tomboy util, single-instance)
+        add_files("src/tomboyutil.c",
                   "src/instance_handler.c")
     end
 
@@ -292,17 +293,17 @@ target("artha")
         add_cxflags("-mwin32")
         add_ldflags("-mwindows")
         on_load(pkgconfig_on_load({
-            packages = {"gtk+-2.0"},
+            packages = {"gtk4"},
         }))
     else
         add_defines("DBUS_AVAILABLE", "X11_AVAILABLE")
         -- system libraries stay dynamic; never downloaded, never replaced
-        add_syslinks("X11", "dbus-1", "dbus-glib-1")
+        add_syslinks("X11")
         -- WordNet has no pkg-config file on common distros; the library
         -- name is probed at configure time (libwordnet on distros,
         -- libWN/libwn from a source build) in posix_on_load below.
         on_load(posix_on_load({
-            packages = {"glib-2.0", "gmodule-2.0", "gtk+-2.0", "dbus-1", "dbus-glib-1", "x11"},
+            packages = {"glib-2.0", "gmodule-2.0", "gtk4", "x11"},
         }))
     end
 
