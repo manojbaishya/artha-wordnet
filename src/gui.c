@@ -95,7 +95,7 @@ static inline void print_last_error();
 static gchar* win32_capture_selection();
 static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data);
 #endif
-static void notification_lookup(gchar *selection, GtkComboBox *combo_query);
+static void notification_lookup(gchar *selection, GtkDropDown *history_drop);
 #ifdef X11_AVAILABLE
 static gpointer hotkey_thread_func(gpointer data);
 static gboolean hotkey_lookup_idle(gpointer data);
@@ -121,8 +121,8 @@ static gboolean set_regex_results(const gchar *wildmat_exp, GtkBuilder *gui_buil
 static gboolean is_wildmat_expr();
 static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
 static gboolean is_entry_unique(GtkTreeModel *query_list_store, GtkTreePath *path, GtkTreeIter *iter, gchar **lemma);
-static gboolean update_history(GtkComboBox *combo_query, char *lemma);
-static gboolean update_history_and_save(GtkComboBox *combo_query, char *lemma);
+static gboolean update_history(GtkDropDown *history_drop, char *lemma);
+static gboolean update_history_and_save(GtkDropDown *history_drop, char *lemma);
 static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
 static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, GSList *suggestions);
 static void construct_show_notification();
@@ -131,11 +131,11 @@ static void query_wni(gchar *search_str,
 					  WNIRequestFlags lookup_type,
 					  GSList **suggestions);
 static void button_search_click(GtkButton *button, gpointer user_data);
-static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data);
+static void combo_history_changed(GtkDropDown *history_drop, GParamSpec *pspec, gpointer user_data);
 static void text_view_clicked(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer user_data);
 static void lookup_selection_in_buffer(GtkTextBuffer *buffer, GtkBuilder *gui_builder);
 static void expander_clicked(GtkExpander *expander, gpointer user_data);
-static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data);
+static void query_list_updated(GListModel *model, guint position, guint removed, guint added, gpointer user_data);
 static GtkTextMark *highlight_definition(guint8 id, guint16 sense, GtkTextView *text_view);
 static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *text_view);
 static void highlight_senses_from_antonyms( guint8 category, guint16 relative_index, guint16 sub_level, GtkTextView *text_view);
@@ -143,10 +143,9 @@ static void highlight_senses_from_domain(guint8 category, guint16 relative_index
 static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view);
 static void relative_selection_changed(GtkSelectionModel *selection, guint position, guint n_items, gpointer user_data);
 static void relative_view_activated(GtkListView *view, guint position, gpointer user_data);
-static void clear_history(GSimpleAction *action, GVariant *params, gpointer user_data);
 static void save_history_to_file(GSimpleAction *action, GVariant *params, gpointer user_data);
 static void query_combo_popup(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer user_data);
-static void load_history(GtkListStore *list_store_query);
+static void load_history(GListStore *list_store_query);
 static void create_stores_renderers(GtkBuilder *gui_builder);
 static void button_next_clicked(GtkButton *button, gpointer user_data);
 static void button_prev_clicked(GtkButton *button, gpointer user_data);
@@ -478,7 +477,7 @@ static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer u
 }
 #endif
 
-static void notification_lookup(gchar *selection, GtkComboBox *combo_query)
+static void notification_lookup(gchar *selection, GtkDropDown *history_drop)
 {
 	gchar *stripped_lookup = g_strstrip(strip_invalid_edges(selection));
 	// make sure this isn't a zero length string; valid but zero length
@@ -496,7 +495,7 @@ static void notification_lookup(gchar *selection, GtkComboBox *combo_query)
 			construct_show_notification();
 
 			gchar *lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
-			update_history_and_save(combo_query, lemma);
+			update_history_and_save(history_drop, lemma);
 
 			g_stpcpy(last_search, stripped_lookup);
 			last_search_successful = TRUE;
@@ -523,14 +522,14 @@ static void notification_lookup(gchar *selection, GtkComboBox *combo_query)
 static void hotkey_selection_ready(GtkBuilder *gui_builder, gchar *selection)
 {
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	GtkEntry *combo_query = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	GtkDropDown *history_drop = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
 
 	if(selection)
 	{
 		/* setting the text is needed for both notification and normal lookup
 		   since on unobscuring the window, a proper lookup needs to be done */
-		GtkEntry *text_entry_query = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
-		gtk_editable_set_text(GTK_EDITABLE(text_entry_query), selection);
+		gtk_editable_set_text(GTK_EDITABLE(combo_query), selection);
 		if(gtk_widget_get_visible(GTK_WIDGET(window)) || !notifier_enabled)
 		{
 			GtkButton *button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
@@ -539,7 +538,7 @@ static void hotkey_selection_ready(GtkBuilder *gui_builder, gchar *selection)
 		/* if notifier_enabled and notifier mod is present */
 		else if(mod_notifier)
 		{
-			notification_lookup(selection, combo_query);
+			notification_lookup(selection, history_drop);
 		}
 	}
 	else
@@ -604,7 +603,7 @@ static void tray_activate_toggle(gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-	GtkComboBox *combo_query = NULL;
+	GtkEntry *combo_query = NULL;
 
 	if(gtk_widget_get_visible(GTK_WIDGET(window)))
 		gtk_widget_hide(GTK_WIDGET(window));
@@ -614,7 +613,7 @@ static void tray_activate_toggle(gpointer user_data)
 		if(mod_notifier)
 			notify_notification_close(mod_notifier, NULL);
 		show_window(window);
-		combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+		combo_query = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 	}
 }
@@ -739,7 +738,7 @@ static void relatives_clear_all(GtkBuilder *gui_builder)
 
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
-		temp_view = gtk_builder_get_object(gui_builder, relative_tree[i]);
+		temp_view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[i]));
 		relative_tab = gtk_widget_get_parent(temp_view);
 
 		if(gtk_widget_get_visible(GTK_WIDGET(relative_tab)))
@@ -1236,7 +1235,7 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 	// set tab visibility
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
-		temp_tree_view = gtk_builder_get_object(gui_builder, relative_tree[i]);
+		temp_tree_view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[i]));
 		relative_tab = gtk_widget_get_parent(temp_tree_view);
 
 		store_empty = (0 == rel_view_get_n_items(temp_tree_view)); /* reset per tab */
@@ -1409,8 +1408,8 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 	GtkExpander *expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
 
-	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	GtkEntry *query_entry = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
+	GtkEntry *query_entry = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	GtkDropDown *combo_query = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
 
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	gboolean results_set = FALSE;
@@ -1490,30 +1489,57 @@ static gboolean is_entry_unique(GtkTreeModel *query_list_store, GtkTreePath *pat
 	return duplicate;
 }
 
-static gboolean update_history(GtkComboBox *combo_query, char *lemma)
+static gboolean is_history_duplicate(gpointer item, gpointer user_data)
 {
-	GtkListStore *query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));
-	gboolean inserted = FALSE;
-
-	if(!query_list_store)
-		g_error("Unable to get query combo box's model!");
-
-	gtk_tree_model_foreach(GTK_TREE_MODEL(query_list_store), (GtkTreeModelForeachFunc) is_entry_unique, (gpointer) &lemma);
-
-	if(lemma)
+	GtkStringObject *so = GTK_STRING_OBJECT(item);
+	const gchar *str = gtk_string_object_get_string(so);
+	gchar **lemma_ptr = (gchar **) user_data;
+	if(*lemma_ptr && str && g_strcmp0(str, *lemma_ptr) == 0)
 	{
-		GtkTreeIter query_list_iter = {0};
-		gtk_list_store_prepend(query_list_store, &query_list_iter);
-		gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
+		*lemma_ptr = NULL;
+	}
+	return FALSE;
+}
+
+static gboolean update_history(GtkDropDown *history_drop, char *lemma)
+{
+	GListModel *model = gtk_drop_down_get_model(history_drop);
+	GListStore *store = G_LIST_STORE(model);
+	guint n = 0;
+	gboolean inserted = FALSE;
+	gchar *lemma_copy = lemma;
+
+	if(!store)
+		g_error("Unable to get history drop down's model!");
+
+	n = g_list_model_get_n_items(model);
+	for(guint i = 0; i < n; i++)
+	{
+		gpointer item = g_list_model_get_item(model, i);
+		if(item)
+		{
+			GtkStringObject *so = GTK_STRING_OBJECT(item);
+			const gchar *str = gtk_string_object_get_string(so);
+			if(lemma_copy && str && g_strcmp0(str, lemma_copy) == 0)
+				lemma_copy = NULL;
+			g_object_unref(item);
+		}
+	}
+
+	if(lemma_copy)
+	{
+		GtkStringObject *so = gtk_string_object_new(lemma_copy);
+		g_list_store_insert(store, 0, so);
+		g_object_unref(so);
 		inserted = TRUE;
 	}
 	return inserted;
 }
 
-static gboolean update_history_and_save(GtkComboBox *combo_query, char *lemma)
+static gboolean update_history_and_save(GtkDropDown *history_drop, char *lemma)
 {
 	gboolean saved = FALSE;
-	if(update_history(combo_query, lemma))
+	if(update_history(history_drop, lemma))
 	{
 		static gboolean update_history_in_file_fail_notifed = FALSE;
 		if(update_history_in_file(lemma))
@@ -1545,7 +1571,7 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 
 	gchar str_count[MAX_SENSE_DIGITS] = "", status_msg[MAX_STATUS_MSG] = "";
 
-	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	(void) 0;
 	
 	while(def_list)
 	{
@@ -1632,8 +1658,11 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 	status_set(status_msg);
 
 	// manage history
-	update_history_and_save(combo_query,
-	((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
+	{
+		GtkDropDown *history_drop = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
+		update_history_and_save(history_drop,
+		((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
+	}
 }
 
 static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, GSList *suggestions)
@@ -1735,8 +1764,7 @@ static void query_wni(gchar *search_str,
 static void button_search_click(GtkButton *button, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	GtkEntry *combo_entry = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
+	GtkEntry *combo_entry = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	GtkTextView *text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
 
@@ -1808,7 +1836,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		}
 
 		gtk_editable_select_region(GTK_EDITABLE(combo_entry), 0, -1);
-		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
+		gtk_widget_grab_focus(GTK_WIDGET(combo_entry));
 	}
 
 	if(search_str)
@@ -1819,44 +1847,54 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	last_lookup_a_notification = FALSE;
 }
 
-static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data)
+static void combo_history_changed(GtkDropDown *history_drop, GParamSpec *pspec, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkButton *button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
-	GtkTreeModel *tree_model = NULL;
-	gint selected_item = gtk_combo_box_get_active(combo_query);
-	gint total_items = 0;
+	GtkEntry *query_entry = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	GListModel *model = gtk_drop_down_get_model(history_drop);
+	guint selected_item = gtk_drop_down_get_selected(history_drop);
+	guint total_items = 0;
+	const gchar *str = NULL;
+	GtkStringObject *so = NULL;
 
-	if(selected_item != -1)
+	(void) pspec;
+
+	if(selected_item == GTK_INVALID_LIST_POSITION)
+		return;
+
+	total_items = model ? g_list_model_get_n_items(model) : 0;
+
+	so = GTK_STRING_OBJECT(gtk_drop_down_get_selected_item(history_drop));
+	if(so)
+		str = gtk_string_object_get_string(so);
+	if(str)
+		gtk_editable_set_text(GTK_EDITABLE(query_entry), str);
+
+	g_signal_emit_by_name(button_search, "clicked");
+
+	if(total_items > 1)
 	{
-		g_signal_emit_by_name(button_search, "clicked");
-		tree_model = gtk_combo_box_get_model(combo_query);
-		total_items = gtk_tree_model_iter_n_children(tree_model, NULL);
-
-		if(total_items > 1)
+		if(0 == selected_item)
 		{
-			if(0 == selected_item)
-			{
-				gtk_widget_set_sensitive(toolbar_prev_btn, TRUE);
-				gtk_widget_set_sensitive(toolbar_next_btn, FALSE);
-			}
-			else if(total_items == selected_item + 1)
-			{
-				gtk_widget_set_sensitive(toolbar_prev_btn, FALSE);
-				gtk_widget_set_sensitive(toolbar_next_btn, TRUE);
-			}
-			else
-			{
-				gtk_widget_set_sensitive(toolbar_next_btn, TRUE);
-				gtk_widget_set_sensitive(toolbar_prev_btn, TRUE);
-			}
+			gtk_widget_set_sensitive(toolbar_prev_btn, TRUE);
+			gtk_widget_set_sensitive(toolbar_next_btn, FALSE);
+		}
+		else if(total_items == selected_item + 1)
+		{
+			gtk_widget_set_sensitive(toolbar_prev_btn, FALSE);
+			gtk_widget_set_sensitive(toolbar_next_btn, TRUE);
+		}
+		else
+		{
+			gtk_widget_set_sensitive(toolbar_next_btn, TRUE);
+			gtk_widget_set_sensitive(toolbar_prev_btn, TRUE);
 		}
 	}
 }
 
 static void lookup_selection_in_buffer(GtkTextBuffer *buffer, GtkBuilder *gui_builder)
 {
-	GtkComboBox *combo_query = NULL;
 	GtkEntry *txtQuery = NULL;
 	GtkButton *button_search = NULL;
 	GtkTextIter start, end;
@@ -1872,8 +1910,7 @@ static void lookup_selection_in_buffer(GtkTextBuffer *buffer, GtkBuilder *gui_bu
 		return;
 	}
 
-	combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	txtQuery = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
+	txtQuery = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
 	if(0 != g_strcmp0(gtk_editable_get_text(GTK_EDITABLE(txtQuery)), selection))
@@ -1994,13 +2031,15 @@ static void expander_clicked(GtkExpander *expander, gpointer user_data)
 	auto_contract = FALSE;
 }
 
-static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data)
+static void query_list_updated(GListModel *model, guint position, guint removed, guint added, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	(void) gui_builder;
-	GtkTreeIter temp_iter = {0};
+	(void) position;
+	(void) removed;
+	(void) added;
 
-	if(gtk_tree_model_iter_nth_child(tree_model, &temp_iter, NULL, 1))
+	if(g_list_model_get_n_items(model) > 1)
 	{
 		gtk_widget_set_sensitive(toolbar_prev_btn, TRUE);
 		gtk_widget_set_sensitive(toolbar_next_btn, FALSE);
@@ -2412,8 +2451,7 @@ static void relative_view_activated(GtkListView *view, guint position, gpointer 
 
 		if(!rel_item_get_is_group(item))
 		{
-			GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-			GtkEntry *txtQuery = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
+			GtkEntry *txtQuery = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 			GtkButton *button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
 			gtk_editable_set_text(GTK_EDITABLE(txtQuery), rel_item_get_term(item));
@@ -2428,14 +2466,14 @@ static void relative_view_activated(GtkListView *view, guint position, gpointer 
 
 static void clear_history(GSimpleAction *action, GVariant *params, gpointer user_data)
 {
-	GtkListStore *list_store_query = GTK_LIST_STORE(user_data);
+	GListStore *list_store_query = G_LIST_STORE(user_data);
 	gchar *hist_file_path = NULL;
 	GFile *history_file = NULL;
 
 	(void) action;
 	(void) params;
 
-	gtk_list_store_clear(list_store_query);
+	g_list_store_remove_all(list_store_query);
 	hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 	history_file = g_file_new_for_path(hist_file_path);
 	g_free(hist_file_path);
@@ -2577,10 +2615,9 @@ static void popover_closed(GtkPopover *popover, gpointer user_data)
    Save History / Clear History popover */
 static void query_combo_popup(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer user_data)
 {
-	GtkListStore *list_store_query = GTK_LIST_STORE(user_data);
+	GListStore *list_store_query = G_LIST_STORE(user_data);
 	GtkWidget *entry = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture));
-	GtkTreeIter iter = {0};
-	gboolean menu_item_enabled = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(list_store_query), &iter);
+	gboolean menu_item_enabled = (g_list_model_get_n_items(G_LIST_MODEL(list_store_query)) > 0);
 	GMenu *menu = g_menu_new();
 	GtkWidget *popover = NULL;
 	GSimpleActionGroup *action_group = g_simple_action_group_new();
@@ -2614,7 +2651,7 @@ static void query_combo_popup(GtkGestureClick *gesture, gint n_press, gdouble x,
 	gtk_popover_popup(GTK_POPOVER(popover));
 }
 
-static void load_history(GtkListStore *list_store_query)
+static void load_history(GListStore *list_store_query)
 {
 	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, ARTHA_TARNAME, HISTORY_FILE_EXT, NULL);
 	if(!hist_file_path)
@@ -2636,9 +2673,9 @@ static void load_history(GtkListStore *list_store_query)
 			{
 				// remove the new line character
 				lookup[lookup_len - 1] = '\0';
-				GtkTreeIter iter = {0};
-				gtk_list_store_prepend(list_store_query, &iter);
-				gtk_list_store_set(list_store_query, &iter, 0, lookup, -1);
+				GtkStringObject *so = gtk_string_object_new(lookup);
+				g_list_store_insert(list_store_query, 0, so);
+				g_object_unref(so);
 			}
 		}
 		fclose(hist_file);
@@ -2648,30 +2685,32 @@ static void load_history(GtkListStore *list_store_query)
 static void create_stores_renderers(GtkBuilder *gui_builder)
 {
 	guint8 i = 0;
-	GtkComboBox *combo_query = NULL;
-	GtkListStore *list_store_query = NULL;
+	GtkEntry *query_entry = NULL;
+	GListStore *list_store_query = NULL;
+	GtkDropDown *history_drop = NULL;
 
 	GtkListView *tree_view = NULL;
-	GtkEntry *query_entry = NULL;
 
-	// combo box data store
-	combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	list_store_query = gtk_list_store_new(1, G_TYPE_STRING);
+	// history drop down data store
+	history_drop = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
+	query_entry = GTK_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	list_store_query = g_list_store_new(GTK_TYPE_STRING_OBJECT);
 
 	load_history(list_store_query);
-	// popup for saving & clearing history
-	query_entry = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
+	// popup for saving & clearing history (right-click on entry)
 	GtkGesture *popup_gesture = gtk_gesture_click_new();
 	gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(popup_gesture), GDK_BUTTON_SECONDARY);
 	g_signal_connect(popup_gesture, "pressed", G_CALLBACK(query_combo_popup), list_store_query);
 	gtk_widget_add_controller(GTK_WIDGET(query_entry), GTK_EVENT_CONTROLLER(popup_gesture));
 
-	g_signal_connect(GTK_TREE_MODEL(list_store_query), "row-inserted", G_CALLBACK(query_list_updated), gui_builder);
-	gtk_combo_box_set_model(combo_query, GTK_TREE_MODEL(list_store_query));
-	gtk_combo_box_set_entry_text_column(combo_query, 0);
+	g_signal_connect(list_store_query, "items-changed", G_CALLBACK(query_list_updated), gui_builder);
+	gtk_drop_down_set_model(history_drop, G_LIST_MODEL(list_store_query));
 	g_object_unref(list_store_query);
 	list_store_query = NULL;
 
+	/* connect selection signal AFTER model is set and relatives views are
+	   built, so the initial notify::selected does not trigger a search
+	   against not-yet-built views */
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
 		GtkSelectionModel *sel_model = NULL;
@@ -2684,35 +2723,35 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 		g_signal_connect(sel_model, "selection-changed", G_CALLBACK(relative_selection_changed), gui_builder);
 		g_signal_connect(tree_view, "activate", G_CALLBACK(relative_view_activated), gui_builder);
 	}
+
+	g_signal_connect(history_drop, "notify::selected", G_CALLBACK(combo_history_changed), gui_builder);
 }
 
 static void button_next_clicked(GtkButton *button, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	gint16 active_item = gtk_combo_box_get_active(combo_query);
-	GtkTreeModel *tree_model = NULL;
+	GtkDropDown *history_drop = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
+	gint active_item = (gint) gtk_drop_down_get_selected(history_drop);
+	GListModel *model = gtk_drop_down_get_model(history_drop);
+	gint n = model ? (gint) g_list_model_get_n_items(model) : 0;
 
-	if(-1 == active_item)
-	{
-		tree_model = gtk_combo_box_get_model(combo_query);
-		active_item = gtk_tree_model_iter_n_children(tree_model, NULL);
-	}
+	if(GTK_INVALID_LIST_POSITION == gtk_drop_down_get_selected(history_drop))
+		active_item = n;
 
-	gtk_combo_box_set_active(combo_query, active_item - 1);
+	gtk_drop_down_set_selected(history_drop, (guint) (active_item - 1));
 }
 
 static void button_prev_clicked(GtkButton *button, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	gint16 active_item = gtk_combo_box_get_active(combo_query);
+	GtkDropDown *history_drop = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
+	gint active_item = (gint) gtk_drop_down_get_selected(history_drop);
 
 	// in case if the search was successful and the index is 0 (current word)
 	// then prev. should move it 1st element, so set active_item = 0, which + 1 will make index as 1
 	// else if search had failed earlier, then prev. should take it to the 0th element
 	// so leave it as -1; if it is something lesser than -1, make it -1
-	if(-1 == active_item && last_search_successful)
+	if(GTK_INVALID_LIST_POSITION == (guint) active_item && last_search_successful)
 	{
 		active_item = 0;
 	}
@@ -2721,14 +2760,14 @@ static void button_prev_clicked(GtkButton *button, gpointer user_data)
 		active_item = -1;
 	}
 
-	gtk_combo_box_set_active(combo_query, active_item + 1);
+	gtk_drop_down_set_selected(history_drop, (guint) (active_item + 1));
 }
 
 static gboolean combo_query_scroll(GtkEventControllerScroll *controller, gdouble dx, gdouble dy, gpointer user_data)
 {
 	GtkWidget *widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
-	GtkComboBox *combo_box = GTK_COMBO_BOX(widget);
-	GtkTreeModel *model = NULL;
+	GtkDropDown *history_drop = GTK_DROP_DOWN(widget);
+	GListModel *model = NULL;
 	gint history_count = 0, current_index = 0;
 	gint delta = 0;
 
@@ -2742,13 +2781,13 @@ static gboolean combo_query_scroll(GtkEventControllerScroll *controller, gdouble
 	else
 		return FALSE;
 
-	model = gtk_combo_box_get_model(combo_box);
-	history_count = gtk_tree_model_iter_n_children(model, NULL);
+	model = gtk_drop_down_get_model(history_drop);
+	history_count = model ? (gint) g_list_model_get_n_items(model) : 0;
 	if(history_count == 0)
 		return FALSE;
 
-	current_index = gtk_combo_box_get_active(combo_box);
-	if(-1 == current_index)
+	current_index = (gint) gtk_drop_down_get_selected(history_drop);
+	if(GTK_INVALID_LIST_POSITION == (guint) current_index)
 		current_index = 0;
 
 	current_index += delta;
@@ -2757,7 +2796,7 @@ static gboolean combo_query_scroll(GtkEventControllerScroll *controller, gdouble
 	else if(current_index < 0)
 		current_index = history_count - 1;
 
-	gtk_combo_box_set_active(combo_box, current_index);
+	gtk_drop_down_set_selected(history_drop, (guint) current_index);
 
 	return TRUE;
 }
@@ -3156,8 +3195,7 @@ static void attach_loaded_terms(WordnetTermsLoaderData *loader_data)
 	GtkButton *query_button = GTK_BUTTON(gtk_builder_get_object(loader_data->gui_builder, BUTTON_SEARCH));
 	g_signal_connect(query_entry_completion, "match-selected", G_CALLBACK(autocomplete_selected), query_button);
 
-	GtkComboBox *query_combo = GTK_COMBO_BOX(gtk_builder_get_object(loader_data->gui_builder, COMBO_QUERY));
-	GtkEntry *query_entry = GTK_ENTRY(gtk_combo_box_get_child(query_combo));
+	GtkEntry *query_entry = GTK_ENTRY(gtk_builder_get_object(loader_data->gui_builder, COMBO_QUERY));
 	gtk_entry_set_completion(query_entry, query_entry_completion);
 
 	// clear the loading message from status bar
@@ -3934,12 +3972,13 @@ int main(int argc, char *argv[])
 					g_signal_connect(button_search, "clicked", G_CALLBACK(button_search_click), gui_builder);
 
 					combo_query = GTK_WIDGET(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-					g_signal_connect(combo_query, "changed", G_CALLBACK(combo_query_changed), gui_builder);
+					GtkWidget *history_drop_w = GTK_WIDGET(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
+					(void) history_drop_w;
 
-					/* get the GtkEntry in GtkComboBox and set activates-default to TRUE; so that
+					/* set activates-default to TRUE; so that
 					   it pass the ENTER key signal to query button */
-					combo_entry = GTK_WIDGET(gtk_combo_box_get_child(GTK_COMBO_BOX(combo_query)));
-					g_object_set(combo_entry, "activates-default", TRUE, NULL);
+					g_object_set(combo_query, "activates-default", TRUE, NULL);
+					combo_entry = combo_query;
 
 					create_text_view_tags(gui_builder);
 
@@ -3952,7 +3991,7 @@ int main(int argc, char *argv[])
 						GtkEventController *scroll = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL |
 											       GTK_EVENT_CONTROLLER_SCROLL_DISCRETE);
 						g_signal_connect(scroll, "scroll", G_CALLBACK(combo_query_scroll), button_search);
-						gtk_widget_add_controller(combo_query, scroll);
+						gtk_widget_add_controller(history_drop_w, scroll);
 					}
 
 					expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));

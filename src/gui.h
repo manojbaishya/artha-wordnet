@@ -99,6 +99,7 @@ typedef struct
 #define BUTTON_SEARCH			"btnSearch"
 #define TEXT_VIEW_DEFINITIONS	"txtDefinitions"
 #define COMBO_QUERY				"cboQuery"
+#define COMBO_HISTORY			"cboHistory"
 #define TOOLBAR					"toolbar"
 #define NOTEBOOK				"notebook"
 #define EXPANDER				"expander"

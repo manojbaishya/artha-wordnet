@@ -181,11 +181,16 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                           </object>
                         </child>
                         <child>
-                          <object class="GtkComboBox" id="cboQuery">
+                          <object class="GtkEntry" id="cboQuery">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="hexpand">True</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkDropDown" id="cboHistory">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="has-entry">True</property>
-                            <property name="hexpand">True</property>
                           </object>
                         </child>
                         <child>

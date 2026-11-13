@@ -5,12 +5,13 @@ Unreleased (Nov 12, 2026)
 	  GtkMessageDialog -> GtkAlertDialog and GtkFileChooserNative ->
 	  GtkFileDialog are migrated behind GTK_CHECK_VERSION(4, 10, 0), with
 	  the legacy widgets kept on 4.6 (the jammy host build). The
-	  GtkComboBox/GtkTreeView/GtkTreeModel/GtkCellRenderer*/GtkEntryCompletion
+	  GtkTreeView/GtkTreeModel/GtkCellRenderer*/GtkEntryCompletion
 	  stack (including gui.glade) is still called as-is; migrating to the
 	  GtkColumnView/GtkDropDown/GtkStringList successors is a separate,
 	  larger task. The relatives panes (13 TreeViews) were migrated in this
-	  round to GtkListView/GListStore/GtkTreeListModel (see below); the
-	  history combo + EntryCompletion (cluster A) is still pending.
+	  round to GtkListView/GListStore/GtkTreeListModel (see below), and the
+	  history combo (GtkComboBox) to GtkDropDown + GListStore<GtkStringObject>
+	  (cluster A); GtkEntryCompletion (no successor in GTK4) is retained.
 	  (The hotkey editor's GtkCellRendererAccel was already
 	  removed — see below.)
 	- dbus-glib -> GDBus (part of GLib). The single-instance logic uses a
@@ -66,6 +67,14 @@ Unreleased (Nov 12, 2026)
 	  (gtk_tree_list_model_new / gtk_single_selection_new consume; get_item/
 	  get_parent/get_row return new refs). Empty group rows are removed via
 	  rel_group_remove_if_empty. Zero GLib warnings at startup.
+	- History combo (cluster A): the GtkComboBox with has-entry (cboQuery)
+	  is migrated to a GtkEntry (typing) + GtkDropDown (history) pair:
+	  history is stored in a GListStore<GtkStringObject> (prepend on new
+	  lookup, duplicate suppression, file-backed via artha.log). Selecting
+	  a history item sets the entry text and triggers the search; toolbar
+	  prev/next and scroll navigation operate on the drop-down index.
+	  GtkEntryCompletion (wordnet term autocomplete) is retained since GTK4
+	  provides no successor ("There is no replacement", deprecated 4.20).
 	  dialogs present non-modally and destroy on "response". On GTK >= 4.10
 	  they are GtkAlertDialog (message = former title, detail = former
 	  body); the file chooser is GtkFileDialog (save) with the same copy
