@@ -41,6 +41,38 @@ Example: `TASK-42: Replace history GtkComboBox with GtkDropDown`
 
 When a PR resolves an issue, include `closes #<issue-number>` or `fixes #<issue-number>` in the PR body so GitHub auto-closes the issue on merge.
 
+### Adobe PR Naming Guide (reference)
+
+We also follow the spirit of [Adobe's Pull Request Naming Guide](https://github.com/adobe/react-spectrum/wiki/Pull-Request-Naming-Guide), which uses the format:
+
+```
+Type (Scope): Summary of changes
+```
+
+| Type | Meaning | Example |
+|------|---------|---------|
+| `fix` | Fixing a bug | `fix: allow useHref on synthetic links` |
+| `feat` | Adding a new feature | `feat(virtualization): add support for custom collection renderers` |
+| `build` | Updates that affect the build system/process | `build: update xmake to latest` |
+| `chore` | Miscellaneous non-meaningful commits | `chore: fix typo in comment` |
+| `docs` | Documentation-only change | `docs: fix typo in README` |
+| `test` | Adding or fixing tests | `test: add unit tests for strutils` |
+| `refactor` | Code change, no bug fix or feature | `refactor: simplify strip_invalid_edges` |
+| `ci` | CI config changes | `ci: add GitHub Actions PR gate` |
+| `localize` | Translation/localization | `localize: add French strings` |
+| `bump` | Dependency version bump | `bump: update GTK to 4.12` |
+| `revert` | Undoing a previous commit | `revert: revert bad gui.c change` |
+
+The `Scope` is optional — a noun giving context to the affected codebase part (do not use issue identifiers as scope).
+
+Our `TASK-ID:` prefix takes precedence for Artha since it links each PR to a Project board issue. Combined form:
+
+```
+<TASK-ID>: Type (Scope): Summary of changes
+```
+
+Example: `TASK-4: feat(build): add check harness, smoke test and GitHub Actions PR gate`
+
 ## Submitting a PR
 
 1. Create an issue (User Story / Bug / Task) and note its number.
