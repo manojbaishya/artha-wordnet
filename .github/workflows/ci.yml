@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-build:
+    name: Host build + smoke (ubuntu-22.04, GTK 4.6)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config python3 curl ca-certificates \
+            libgtk-4-dev libglib2.0-dev libx11-dev \
+            wordnet wordnet-dev \
+            xvfb xauth
+
+      - name: Install pinned xmake from deps.json
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, urllib.request
+          tool = json.load(open("deps.json"))["build_tool"]["xmake"]
+          body = urllib.request.urlopen(tool["url"]).read()
+          digest = hashlib.sha256(body).hexdigest()
+          if digest != tool["sha256"]:
+              raise SystemExit(f"xmake sha256 mismatch: {digest} != {tool['sha256']}")
+          open("/tmp/xmake", "wb").write(body)
+          PY
+          sudo install -m 0755 /tmp/xmake /usr/local/bin/xmake
+          xmake --version
+
+      - name: Build, manifest drift check, smoke test
+        run: ./ci/check.sh
+
+  flatpak-build:
+    name: Flatpak build (GNOME 51, GTK 4.24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flatpak
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install -y --user flathub org.gnome.Sdk//51 org.gnome.Platform//51
+
+      - name: Cache flatpak-builder state
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/fb-state
+          key: fb-state-${{ hashFiles('deps.json') }}
+          restore-keys: fb-state-
+
+      - name: Full flatpak build (as in BUILDING.md)
+        run: |
+          rm -rf /tmp/fb-out
+          flatpak-builder --disable-rofiles-fuse \
+            --state-dir="$HOME/.cache/fb-state" --force-clean \
+            /tmp/fb-out flatpak/org.artha.Artha.json
