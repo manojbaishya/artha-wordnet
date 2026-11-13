@@ -8,7 +8,8 @@ Unreleased (Nov 12, 2026)
 	  GtkComboBox/GtkTreeView/GtkTreeModel/GtkCellRenderer*/GtkEntryCompletion
 	  stack (including gui.glade) is still called as-is; migrating to the
 	  GtkColumnView/GtkDropDown/GtkStringList successors is a separate,
-	  larger task. GtkCellRendererAccel is not used anywhere.
+	  larger task. (The hotkey editor's GtkCellRendererAccel was already
+	  removed — see below.)
 	- dbus-glib -> GDBus (part of GLib). The single-instance logic uses a
 	  session-bus name (org.artha.unique) with RequestName; on bus failure
 	  the app degrades to multi-instance with a warning instead of aborting.
@@ -36,6 +37,15 @@ Unreleased (Nov 12, 2026)
 	  hotkey is silently disabled. The Win32 hotkey receiver (RegisterHotKey
 	  message window) is not yet ported; global hotkeys on Windows are
 	  unavailable in this build. XSynchronize failure no longer calls g_error.
+	- Hotkey editor: the one-row GtkTreeView + GtkCellRendererAccel (gone in
+	  GTK 4) was replaced by a plain GtkButton showing the current binding
+	  (gtk_accelerator_get_label). Click to capture; Escape cancels;
+	  BackSpace/Delete clears; invalid or unmodified combos are rejected with
+	  a warning dialog; the same combo re-press is a silent no-op. Capture is
+	  a CAPTURE-phase GtkEventControllerKey on the toplevel (GTK key events
+	  follow keyboard focus, not the button) with explicit reference hand-off
+	  to the window (gtk_widget_add_controller does not take the caller's
+	  reference).
 	- gtk_dialog_run is gone (nested main loops removed): all message
 	  dialogs present non-modally and destroy on "response". On GTK >= 4.10
 	  they are GtkAlertDialog (message = former title, detail = former
