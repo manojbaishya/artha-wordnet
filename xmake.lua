@@ -309,10 +309,16 @@ target("artha")
 
     -- data files
     add_installfiles("data/gui.glade", {prefixdir = "share/artha"})
+    -- the binary reads the icon via ICON_DIR (share/pixmaps/artha.png);
+    -- the hicolor entry lets launchers resolve the menu icon by name.
+    -- NB: the hicolor rule carries a distinct raw pattern ("|data") so
+    -- xmake's extraconf lookup does not merge the two rules for the
+    -- same source file.
     add_installfiles("data/artha.png", {prefixdir = "share/pixmaps"})
+    add_installfiles("data/artha.png|data", {prefixdir = "share/icons/hicolor/128x128/apps", filename = "org.artha.Artha.png"})
     add_installfiles("data/artha.1", {prefixdir = "share/man/man1"})
     if not is_plat("windows") then
-        add_installfiles("data/artha.desktop", {prefixdir = "share/applications"})
+        add_installfiles("data/org.artha.Artha.desktop", {prefixdir = "share/applications"})
         add_installfiles("data/org.artha.Artha.metainfo.xml", {prefixdir = "share/metainfo"})
     end
 

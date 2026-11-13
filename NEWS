@@ -17,6 +17,13 @@ Unreleased (Nov 12, 2026)
 	  stock GNOME (no org.kde.StatusNotifierWatcher) there is no tray icon
 	  and the app works regardless. The tray right-click menu (_Hide/_Quit)
 	  was dropped; quit stays available via Ctrl+Q and the toolbar.
+	- Install layout is app-id-named end to end: the desktop file ships as
+	  `org.artha.Artha.desktop` (Icon=org.artha.Artha) and the PNG as
+	  `share/icons/hicolor/128x128/apps/org.artha.Artha.png` alongside
+	  `share/pixmaps/artha.png` (read by the app itself); the AppStream
+	  metainfo declares a matching launchable and a stock icon, so
+	  `appstreamcli compose` accepts the component during the flatpak
+	  build.
 	- WordNet 3.0 -> 3.1 dictionary (the 3.0 dict is no longer installed;
 	  the libwordnet static library is still the 3.0 source, as upstream
 	  ships no 3.1 library). flatpak ships the 3.1 dict set as an overlay

@@ -102,8 +102,9 @@ xmake install -o "$PWD/sandbox/stage"
 
 `xmake install` lays out:
 
-    bin/artha  share/applications/artha.desktop  share/artha/gui.glade
-    share/man/man1/artha.1  share/pixmaps/artha.png
+    bin/artha  share/applications/org.artha.Artha.desktop
+    share/artha/gui.glade  share/man/man1/artha.1
+    share/pixmaps/artha.png  share/icons/hicolor/128x128/apps/org.artha.Artha.png
     share/metainfo/org.artha.Artha.metainfo.xml
 
 ## What the build does to (not) your system
@@ -224,12 +225,13 @@ permission. Notes:
   still works.
 - Metainfo: `data/org.artha.Artha.metainfo.xml` (AppStream, id
   `org.artha.Artha`) is installed to `share/metainfo` and validates with
-  `appstreamcli validate`. During the flatpak build, appstreamcli compose
-  auto-normalized the exports to the app id: `artha.desktop` is not
-  exported; `org.artha.Artha.desktop` (Icon rewritten to `org.artha.Artha`)
-  and a byte-identical hicolor copy of `artha.png` are. Preparatory work
-  for later distribution only: the flatpak is NOT published anywhere and
-  is not flathub-ready (no hosted source, no repo, local `type: dir`).
+  `appstreamcli validate`. The desktop file and the hicolor icon are
+  installed app-id-named out of the box (`data/org.artha.Artha.desktop`,
+  `share/icons/hicolor/128x128/apps/org.artha.Artha.png`), so
+  `appstreamcli compose` during the flatpak build accepts the component
+  (launchable and stock icon match the id). Preparatory work for later
+  distribution only: the flatpak is NOT published anywhere and is not
+  flathub-ready (no hosted source, no repo, local `type: dir`).
 - The SDK's `gcc` defaults to gnu23 with gcc-14 diagnostics; artha's own
   sources compile clean under it (WordNet 3.0 is built with
   `-std=gnu11` as before).

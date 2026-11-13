@@ -121,13 +121,10 @@ def module_artha():
         "build-commands": [
             "CPATH=/app/include LIBRARY_PATH=/app/lib xmake f --prefix=/app -m release",
             "CPATH=/app/include LIBRARY_PATH=/app/lib xmake",
+            # xmake installs the app-id-named hicolor icon and desktop
+            # file (data/org.artha.Artha.desktop) itself; flatpak exports
+            # them as-is.
             "CPATH=/app/include LIBRARY_PATH=/app/lib xmake install -o /app",
-            # Flatpak exports desktop files/icons named after the app-id.
-            # Icons must live in the hicolor theme to be exported (share/pixmaps
-            # is not picked up by this flatpak-builder); artha.png is 128x128.
-            "install -Dm644 /app/share/applications/artha.desktop /app/share/applications/org.artha.Artha.desktop",
-            "sed -i 's/^Icon=artha$/Icon=org.artha.Artha/' /app/share/applications/org.artha.Artha.desktop",
-            "install -Dm644 /app/share/pixmaps/artha.png /app/share/icons/hicolor/128x128/apps/org.artha.Artha.png",
         ],
     }
 
@@ -161,12 +158,13 @@ def build_manifest(deps):
             "/bin/xmake",
             # development artifacts of the from-source modules (libwordnet.a,
             # wn.h); useless (and large) at runtime. Artha is a C application:
-            # no headers, static libs, pkg-config files or debug symbols needed.
+            # no headers, static libs or pkg-config files needed.
+            # NB: no "/lib/debug" entry — nothing in this build produces
+            # debug files, and flathub rejects a toplevel /lib/debug cleanup.
             "/include",
             "/lib/*.a",
             "/lib/*.la",
             "/lib/pkgconfig",
-            "/lib/debug",
         ],
         "modules": modules,
     }
