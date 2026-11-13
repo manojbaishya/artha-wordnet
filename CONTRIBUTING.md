@@ -41,35 +41,29 @@ Example: `TASK-42: Replace history GtkComboBox with GtkDropDown`
 
 When a PR resolves an issue, include `closes #<issue-number>` or `fixes #<issue-number>` in the PR body so GitHub auto-closes the issue on merge.
 
-### Adobe PR Naming Guide (reference)
+### PR name format
 
-We also follow the spirit of [Adobe's Pull Request Naming Guide](https://github.com/adobe/react-spectrum/wiki/Pull-Request-Naming-Guide), which uses the format:
-
-```
-Type (Scope): Summary of changes
-```
-
-| Type | Meaning | Example |
-|------|---------|---------|
-| `fix` | Fixing a bug | `fix: allow useHref on synthetic links` |
-| `feat` | Adding a new feature | `feat(virtualization): add support for custom collection renderers` |
-| `build` | Updates that affect the build system/process | `build: update xmake to latest` |
-| `chore` | Miscellaneous non-meaningful commits | `chore: fix typo in comment` |
-| `docs` | Documentation-only change | `docs: fix typo in README` |
-| `test` | Adding or fixing tests | `test: add unit tests for strutils` |
-| `refactor` | Code change, no bug fix or feature | `refactor: simplify strip_invalid_edges` |
-| `ci` | CI config changes | `ci: add GitHub Actions PR gate` |
-| `localize` | Translation/localization | `localize: add French strings` |
-| `bump` | Dependency version bump | `bump: update GTK to 4.12` |
-| `revert` | Undoing a previous commit | `revert: revert bad gui.c change` |
-
-The `Scope` is optional — a noun giving context to the affected codebase part (do not use issue identifiers as scope).
-
-Our `TASK-ID:` prefix takes precedence for Artha since it links each PR to a Project board issue. Combined form:
+A PR name follows `Type (Scope): Summary of changes`, prefixed with the task ID:
 
 ```
 <TASK-ID>: Type (Scope): Summary of changes
 ```
+
+| Type | Meaning | Example |
+|------|---------|---------|
+| `fix` | Fixing a bug | `TASK-42: fix: allow useHref on synthetic links` |
+| `feat` | Adding a new feature | `TASK-42: feat(virtualization): add support for custom collection renderers` |
+| `build` | Updates that affect the build system/process | `TASK-4: build: add check harness, smoke test and GitHub Actions PR gate` |
+| `chore` | Miscellaneous non-meaningful commits | `TASK-42: chore: fix typo in comment` |
+| `docs` | Documentation-only change | `TASK-42: docs: fix typo in README` |
+| `test` | Adding or fixing tests | `TASK-42: test: add unit tests for strutils` |
+| `refactor` | Code change, no bug fix or feature | `TASK-42: refactor: simplify strip_invalid_edges` |
+| `ci` | CI config changes | `TASK-4: ci: add GitHub Actions PR gate` |
+| `localize` | Translation/localization | `TASK-42: localize: add French strings` |
+| `bump` | Dependency version bump | `TASK-42: bump: update GTK to 4.12` |
+| `revert` | Undoing a previous commit | `TASK-42: revert: revert bad gui.c change` |
+
+The `Scope` is optional — a noun giving context to the affected codebase part (do not use issue identifiers as scope). The `TASK-ID:` prefix links each PR to its Project board issue and takes precedence.
 
 Example: `TASK-4: feat(build): add check harness, smoke test and GitHub Actions PR gate`
 
