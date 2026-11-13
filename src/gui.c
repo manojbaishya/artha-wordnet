@@ -1539,10 +1539,15 @@ static gboolean update_history(GtkDropDown *history_drop, char *lemma)
 static gboolean update_history_and_save(GtkDropDown *history_drop, char *lemma)
 {
 	gboolean saved = FALSE;
-	if(update_history(history_drop, lemma))
+	/* copy the lemma before touching the store: inserting into the store
+	   emits items-added, which re-enters combo_history_changed →
+	   button_search_click → query_wni, which frees results (and the
+	   lemma string), leaving `lemma` dangling. */
+	gchar *lemma_copy = g_strdup(lemma);
+	if(update_history(history_drop, lemma_copy))
 	{
 		static gboolean update_history_in_file_fail_notifed = FALSE;
-		if(update_history_in_file(lemma))
+		if(update_history_in_file(lemma_copy))
 		{
 			saved = TRUE;
 		}
@@ -1552,6 +1557,7 @@ static gboolean update_history_and_save(GtkDropDown *history_drop, char *lemma)
 			update_history_in_file_fail_notifed = TRUE;
 		}
 	}
+	g_free(lemma_copy);
 	return saved;
 }
 
@@ -1660,8 +1666,8 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 	// manage history
 	{
 		GtkDropDown *history_drop = GTK_DROP_DOWN(gtk_builder_get_object(gui_builder, COMBO_HISTORY));
-		update_history_and_save(history_drop,
-		((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
+		gchar *lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
+		update_history_and_save(history_drop, lemma);
 	}
 }
 
