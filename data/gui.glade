@@ -260,7 +260,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeSynonyms">
+                              <object class="GtkListView" id="treeSynonyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -281,7 +281,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeAntonyms">
+                              <object class="GtkListView" id="treeAntonyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -302,7 +302,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeDerivatives">
+                              <object class="GtkListView" id="treeDerivatives">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -323,7 +323,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treePertainyms">
+                              <object class="GtkListView" id="treePertainyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -344,7 +344,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeAttributes">
+                              <object class="GtkListView" id="treeAttributes">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -365,7 +365,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeSimilar">
+                              <object class="GtkListView" id="treeSimilar">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -386,7 +386,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeDomain">
+                              <object class="GtkListView" id="treeDomain">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -407,7 +407,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeCauses">
+                              <object class="GtkListView" id="treeCauses">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -428,7 +428,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeEntails">
+                              <object class="GtkListView" id="treeEntails">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -449,7 +449,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeHypernyms">
+                              <object class="GtkListView" id="treeHypernyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -470,7 +470,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeHyponyms">
+                              <object class="GtkListView" id="treeHyponyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -491,7 +491,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeHolonyms">
+                              <object class="GtkListView" id="treeHolonyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>
@@ -512,7 +512,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeMeronyms">
+                              <object class="GtkListView" id="treeMeronyms">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                               </object>

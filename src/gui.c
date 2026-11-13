@@ -25,6 +25,7 @@
 
 #include "gui.h"
 #include "status_notifier.h"
+#include "rel_item.h"
 #include <stdarg.h>
 
 /* Global variables */
@@ -36,6 +37,12 @@ static const gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>"
 static const gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
 "treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
 
+/* antonyms pane: new INDIRECT_TERM category (walks the properties list
+   counting indirect *items*, mirror of the DIRECT branch with the
+   relation > DIRECT_ANT filter); used by simple mode, where indirect
+   pairs get their own item row */
+#define INDIRECT_TERM	3
+static guint16 root_variant_rows_before(GListStore *root, gint variant, guint upto);
 #define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
 static const gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
 
@@ -101,8 +108,8 @@ static guint8 get_frequency(guint sense_count);
 static void relatives_clear_all(GtkBuilder *gui_builder);
 static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder);
 static guint16 append_term(gchar *target, gchar *term, gboolean is_heading);
-static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *parent_iter);
-static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_parent, GSList **dupe_finder_list);
+static void build_tree(GNode *node, GListStore *parent_store);
+static void add_nodes(GNode *tree, GListStore *parent_store, GSList **dupe_finder_list);
 static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
 static void holo_mero_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
 static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
@@ -134,8 +141,8 @@ static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *
 static void highlight_senses_from_antonyms( guint8 category, guint16 relative_index, guint16 sub_level, GtkTextView *text_view);
 static void highlight_senses_from_domain(guint8 category, guint16 relative_index, GtkTextView *text_view);
 static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view);
-static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data);
-static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data);
+static void relative_selection_changed(GtkSelectionModel *selection, guint position, guint n_items, gpointer user_data);
+static void relative_view_activated(GtkListView *view, guint position, gpointer user_data);
 static void clear_history(GSimpleAction *action, GVariant *params, gpointer user_data);
 static void save_history_to_file(GSimpleAction *action, GVariant *params, gpointer user_data);
 static void query_combo_popup(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, gpointer user_data);
@@ -698,24 +705,45 @@ static guint8 get_frequency(guint sense_count)
 	return frequency;
 }
 
+/* remove a group header row from the pane's root store if it ended up with
+   no children (mirror of the old gtk_tree_store_remove(empty group) logic) */
+static void rel_group_remove_if_empty(GListStore *root, RelItem *group)
+{
+	GListStore *children = rel_item_get_children(group);
+	guint n = (children != NULL) ? g_list_model_get_n_items(G_LIST_MODEL(children)) : 0;
+
+	if(n == 0)
+	{
+		guint count = g_list_model_get_n_items(G_LIST_MODEL(root));
+
+		for(guint i = 0; i < count; i++)
+		{
+			RelItem *child = REL_ITEM(g_list_model_get_item(G_LIST_MODEL(root), i));
+
+			if(child == group)
+			{
+				g_list_store_remove(root, i);
+				g_object_unref(child);
+				break;
+			}
+			g_object_unref(child);
+		}
+	}
+}
+
 static void relatives_clear_all(GtkBuilder *gui_builder)
 {
 	guint8 i = 0;
-	GtkTreeView *temp_tree_view = NULL;
-	GtkTreeStore *temp_tree_store = NULL;
+	GtkWidget *temp_view = NULL;
 	GtkWidget *relative_tab = NULL;
 
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
-		temp_tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-		relative_tab = gtk_widget_get_parent(GTK_WIDGET(temp_tree_view));
+		temp_view = gtk_builder_get_object(gui_builder, relative_tree[i]);
+		relative_tab = gtk_widget_get_parent(temp_view);
 
 		if(gtk_widget_get_visible(GTK_WIDGET(relative_tab)))
-		{
-			temp_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(temp_tree_view));
-			if(temp_tree_store)
-				gtk_tree_store_clear(temp_tree_store);
-		}
+			rel_view_remove_all(temp_view);
 		else
 			gtk_widget_show(relative_tab);
 	}
@@ -725,20 +753,21 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 {
 	WNIAntonymItem *temp_antonym_item = NULL;
 	GSList *implications = NULL;
-	GtkTreeView *tree_antonyms = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[TREE_ANTONYMS]));
-	GtkTreeStore *antonyms_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_antonyms));
-	GtkTreeIter iter = {0}, sub_iter = {0}, direct_iter = {0}, indirect_iter = {0};
-	GtkTreePath *expand_path = NULL;
-	gboolean direct_deleted = FALSE, has_indirect = FALSE;
-
-	g_assert(antonyms_tree_store);
+	GtkWidget *view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[TREE_ANTONYMS]));
+	GListStore *root = rel_view_root_store(view);
+	RelItem *direct_group = NULL, *indirect_group = NULL;
+	gboolean has_indirect = FALSE;
 
 	if(advanced_mode)
 	{
-		gtk_tree_store_append(antonyms_tree_store, &direct_iter, NULL);
-		gtk_tree_store_set(antonyms_tree_store, &direct_iter, 0, STR_ANTONYM_HEADER_DIRECT, 1, PANGO_WEIGHT_SEMIBOLD, 2, NULL, -1);
-		gtk_tree_store_append(antonyms_tree_store, &indirect_iter, NULL);
-		gtk_tree_store_set(antonyms_tree_store, &indirect_iter, 0, STR_ANTONYM_HEADER_INDIRECT, 1, PANGO_WEIGHT_SEMIBOLD, 2, NULL, -1);
+		direct_group = rel_item_new(STR_ANTONYM_HEADER_DIRECT, PANGO_WEIGHT_SEMIBOLD, NULL, TRUE, 0);
+		indirect_group = rel_item_new(STR_ANTONYM_HEADER_INDIRECT, PANGO_WEIGHT_SEMIBOLD, NULL, TRUE, 0);
+		/* create the children stores before the tree model sees the groups:
+		   create_children(NULL) would pin the rows as non-expandable forever */
+		rel_item_ensure_children(direct_group);
+		rel_item_ensure_children(indirect_group);
+		g_list_store_append(root, direct_group);
+		g_list_store_append(root, indirect_group);
 	}
 
 	while(antonyms)
@@ -746,26 +775,65 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 		temp_antonym_item = antonyms->data;
 		if(temp_antonym_item)
 		{
-			if(DIRECT_ANT == temp_antonym_item->relation)
+			gboolean is_direct = (DIRECT_ANT == temp_antonym_item->relation);
+			GListStore *parent_store = root;
+
+			if(is_direct)
 			{
 				if(advanced_mode)
-					gtk_tree_store_append(antonyms_tree_store, &iter, &direct_iter);
-				else
-					gtk_tree_store_append(antonyms_tree_store, &iter, NULL);
-				gtk_tree_store_set(antonyms_tree_store, &iter, 0, temp_antonym_item->term, 1, PANGO_WEIGHT_NORMAL, 2, NULL, -1);
+					parent_store = rel_item_ensure_children(direct_group);
 			}
 			else
-			{				
-				iter = indirect_iter;
-				has_indirect = TRUE;
-			}
-			implications = temp_antonym_item->implications;
-			while(implications)
 			{
-				gtk_tree_store_append(antonyms_tree_store, &sub_iter, &iter);
-				gtk_tree_store_set(antonyms_tree_store, &sub_iter, 0, ((WNIImplication*)implications->data)->term, 
-				1, PANGO_WEIGHT_NORMAL, 2, (DIRECT_ANT == temp_antonym_item->relation)?NULL:temp_antonym_item->term, -1);
-				implications = g_slist_next(implications);
+				has_indirect = TRUE;
+				if(advanced_mode)
+					parent_store = rel_item_ensure_children(indirect_group);
+			}
+
+			/* advanced mode shows no item row for indirect pairs: the
+			   implications hang directly under the Indirect group, labelled
+			   with the via term; direct pairs get an item row under Direct.
+			   Simple mode shows every pair as a term row at the top level;
+			   implications hang under it (indirect pairs also get a via label) */
+			if(!is_direct && advanced_mode)
+			{
+				implications = temp_antonym_item->implications;
+				while(implications)
+				{
+					RelItem *imp_item = rel_item_new(((WNIImplication*)implications->data)->term,
+									     PANGO_WEIGHT_NORMAL, temp_antonym_item->term, FALSE, 4);
+
+					g_list_store_append(parent_store, imp_item);
+					g_object_unref(imp_item);
+					implications = g_slist_next(implications);
+				}
+			}
+			else
+			{
+				RelItem *term_item = rel_item_new(temp_antonym_item->term, PANGO_WEIGHT_NORMAL,
+									  NULL, FALSE, is_direct ? 1 : 2);
+				GListStore *item_store = NULL;
+
+				/* only rows that will have implication children become
+				   expandable; plain terms stay leaf rows */
+				if(temp_antonym_item->implications != NULL)
+					item_store = rel_item_ensure_children(term_item);
+
+				g_list_store_append(parent_store, term_item);
+
+				implications = temp_antonym_item->implications;
+				while(implications)
+				{
+					RelItem *imp_item = rel_item_new(((WNIImplication*)implications->data)->term,
+									     PANGO_WEIGHT_NORMAL,
+									     is_direct ? NULL : temp_antonym_item->term,
+									     FALSE, is_direct ? 3 : 4);
+
+					g_list_store_append(item_store, imp_item);
+					g_object_unref(imp_item);
+					implications = g_slist_next(implications);
+				}
+				g_object_unref(term_item);
 			}
 		}
 		antonyms = g_slist_next(antonyms);
@@ -773,31 +841,14 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 
 	if(advanced_mode)
 	{
-		// if only Direct is present, then Indirect will be deleted, only indirect_iter becomes invalid
-		// if only Indirect is present, then Direct will be deleted, and the indirect delete won't work, because the indirect_iter will get invalid
-		// if both are present, none deleted, no iters become invalid
-		// if both are not present, we won't be here in the first place ;)
-		// notice the NOT op. for assigning direct_deleted, which is imp. coz it says true when there are no children under Direct i.e. Direct was deleted
-		if((direct_deleted = !gtk_tree_model_iter_has_child(GTK_TREE_MODEL(antonyms_tree_store), &direct_iter)))
-			gtk_tree_store_remove(antonyms_tree_store, &direct_iter);
-		if(!gtk_tree_model_iter_has_child(GTK_TREE_MODEL(antonyms_tree_store), &indirect_iter))
-			gtk_tree_store_remove(antonyms_tree_store, &indirect_iter);
-
-		// expand one level
-		expand_path = gtk_tree_path_new_from_indices(0, -1);
-
-		// if direct list was deleted, then this is the indirect list that we are dealing, so expand, else don't
-		gtk_tree_view_expand_row(tree_antonyms, expand_path, direct_deleted);
-		gtk_tree_path_free(expand_path);
-
-		// if there is a list in this path "1", then it should be indirect
-		expand_path = gtk_tree_path_new_from_indices(1, -1);
-		gtk_tree_view_expand_row(tree_antonyms, expand_path, TRUE);
-		gtk_tree_path_free(expand_path);
-		expand_path = NULL;
+		rel_group_remove_if_empty(root, direct_group);
+		rel_group_remove_if_empty(root, indirect_group);
+		/* expand the group headers (mirror of the old one-level expansion) */
+		rel_view_expand_roots(view);
+		g_object_unref(direct_group);
+		g_object_unref(indirect_group);
 	}
-	
-	gtk_tree_view_set_headers_visible(tree_antonyms, has_indirect);
+	(void) has_indirect;
 }
 
 static guint16 append_term(gchar *target, gchar *term, gboolean is_heading)
@@ -816,18 +867,21 @@ static guint16 append_term(gchar *target, gchar *term, gboolean is_heading)
 	return (i + 2);
 }
 
-static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *parent_iter)
+static void build_tree(GNode *node, GListStore *parent_store)
 {
 	GNode *child = NULL;
 	GSList *temp_list = NULL;
 	WNIImplication *imp = NULL;
-	GtkTreeIter tree_iter = {0};
 	guint32 i = 0;
 	gchar terms[MAX_CONCAT_STR] = "";
 
 	if((child = g_node_first_child(node)))
 	do
 	{
+		RelItem *item = NULL;
+		GNode *grandchild = NULL;
+		GListStore *child_store = NULL;
+
 		i = 0;
 		terms[0] = '\0';
 
@@ -841,25 +895,31 @@ static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *paren
 		}
 		terms[i - 2] = '\0';
 
-		gtk_tree_store_append(tree_store, &tree_iter, parent_iter);
-		gtk_tree_store_set(tree_store, &tree_iter, 0, terms, 1, PANGO_WEIGHT_NORMAL, -1);
-
-		build_tree(child, tree_store, &tree_iter);
+		item = rel_item_new(terms, PANGO_WEIGHT_NORMAL, NULL, FALSE, 0);
+		grandchild = g_node_first_child(child);
+		if(grandchild != NULL)
+			child_store = rel_item_ensure_children(item);
+		g_list_store_append(parent_store, item);
+		if(child_store != NULL)
+			build_tree(child, child_store);
+		g_object_unref(item);
 
 	} while((child = g_node_next_sibling(child)));
 }
 
-static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_parent, GSList **dupe_finder_list)
+static void add_nodes(GNode *tree, GListStore *parent_store, GSList **dupe_finder_list)
 {
 	WNIImplication *imp = NULL;
 	gchar terms[MAX_CONCAT_STR] = "";
-	GtkTreeIter iter = {0};
 	gboolean is_dupe = FALSE;
 	guint16 i = 0;
 	GSList *term_list = ((WNITreeList*)tree->data)->word_list;
 
 	if(advanced_mode)
 	{
+		RelItem *item = NULL;
+		GListStore *child_store = NULL;
+
 		while(term_list)
 		{
 			imp = (WNIImplication*) term_list->data;
@@ -869,10 +929,13 @@ static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_p
 		}
 		terms[i - 2] = '\0';
 
-		gtk_tree_store_append(tree_store, &iter, node_parent);
-		gtk_tree_store_set(tree_store, &iter, 0, terms, 1, PANGO_WEIGHT_NORMAL, -1);
-
-		build_tree(tree, tree_store, &iter);
+		item = rel_item_new(terms, PANGO_WEIGHT_NORMAL, NULL, FALSE, 0);
+		if(g_node_first_child(tree) != NULL)
+			child_store = rel_item_ensure_children(item);
+		g_list_store_append(parent_store, item);
+		if(child_store != NULL)
+			build_tree(tree, child_store);
+		g_object_unref(item);
 	}
 	else
 	{
@@ -892,8 +955,10 @@ static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_p
 
 			if(!is_dupe)
 			{
-				gtk_tree_store_append(tree_store, &iter, node_parent);
-				gtk_tree_store_set(tree_store, &iter, 0, imp->term, 1, PANGO_WEIGHT_NORMAL, -1);
+				RelItem *item = rel_item_new(imp->term, PANGO_WEIGHT_NORMAL, NULL, FALSE, 0);
+
+				g_list_store_append(parent_store, item);
+				g_object_unref(item);
 			}
 
 			term_list = g_slist_next(term_list);
@@ -904,15 +969,13 @@ static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_p
 static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id)
 {
 	GNode *tree = NULL;
-	GtkTreeView *tree_view = NULL;
-	GtkTreeStore *tree_store = NULL;
+	GtkWidget *view = NULL;
+	GListStore *root = NULL;
 	GSList *dupe_finder_list = NULL;
 	guint8 i = (WORDNET_INTERFACE_HYPERNYMS == id) ? TREE_HYPERNYMS : ((WORDNET_INTERFACE_HYPONYMS == id) ? TREE_HYPONYMS : TREE_PERTAINYMS);
 
-	tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-	tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
-
-	g_assert(tree_store);
+	view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[i]));
+	root = rel_view_root_store(view);
 
 	while(properties)
 	{
@@ -921,7 +984,7 @@ static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFl
 
 		while(tree)
 		{
-			add_nodes(tree, tree_store, NULL, &dupe_finder_list);
+			add_nodes(tree, root, &dupe_finder_list);
 			tree = g_node_next_sibling(tree);
 		}
 
@@ -935,19 +998,18 @@ static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFl
 static void holo_mero_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id)
 {
 	GNode *tree = NULL;
-	GtkTreeIter type_iter[HOLO_MERO_COUNT] = {{0}}, *relative_parent = NULL;
+	RelItem *type_item[HOLO_MERO_COUNT] = {NULL};
 	GSList *dupe_finder_list[HOLO_MERO_COUNT] = {NULL};
 	guint8 i = (WORDNET_INTERFACE_MERONYMS == id) ? TREE_MERONYMS : TREE_HOLONYMS;
-	GtkTreePath *head_level = NULL;
-	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-	GtkTreeStore *tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
-
-	g_assert(tree_store);
+	GtkWidget *view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[i]));
+	GListStore *root = rel_view_root_store(view);
+	gint8 mero = i; /* i reused as loop counter below */
 
 	for(guint8 j = 0; j < HOLO_MERO_COUNT; ++j)
 	{
-		gtk_tree_store_append(tree_store, &type_iter[j], NULL);
-		gtk_tree_store_set(tree_store, &type_iter[j], 0, holo_mero_types[i - TREE_HOLONYMS][j], 1, PANGO_WEIGHT_SEMIBOLD, -1);
+		type_item[j] = rel_item_new(holo_mero_types[mero - TREE_HOLONYMS][j], PANGO_WEIGHT_SEMIBOLD, NULL, TRUE, 0);
+		rel_item_ensure_children(type_item[j]); /* before the tree model sees the group */
+		g_list_store_append(root, type_item[j]);
 	}
 
 	while(properties)
@@ -956,9 +1018,12 @@ static void holo_mero_load(GSList *properties, GtkBuilder *gui_builder, WNIReque
 
 		while(tree)
 		{
-			i = (((WNITreeList*)tree->data)->type) - ((WORDNET_INTERFACE_HOLONYMS == id) ? ISMEMBERPTR : HASMEMBERPTR);
-			relative_parent = (i < HOLO_MERO_COUNT) ? &type_iter[i] : NULL;
-			add_nodes(tree, tree_store, relative_parent, &dupe_finder_list[i]);
+			gint8 type = (((WNITreeList*)tree->data)->type) - ((WORDNET_INTERFACE_HOLONYMS == id) ? ISMEMBERPTR : HASMEMBERPTR);
+
+			if(type >= 0 && type < HOLO_MERO_COUNT)
+				add_nodes(tree, rel_item_ensure_children(type_item[type]), &dupe_finder_list[type]);
+			else
+				add_nodes(tree, root, NULL);
 			tree = g_node_next_sibling(tree);
 		}
 
@@ -967,44 +1032,36 @@ static void holo_mero_load(GSList *properties, GtkBuilder *gui_builder, WNIReque
 
 	for(i = 0; i < HOLO_MERO_COUNT; i++)
 	{
-		// if a node has child then expand it, else remove it
-		if(gtk_tree_model_iter_has_child(GTK_TREE_MODEL(tree_store), &type_iter[i]))
-		{
-			head_level = gtk_tree_model_get_path(GTK_TREE_MODEL(tree_store), &type_iter[i]);
-			gtk_tree_view_expand_row(tree_view, head_level, FALSE);
-			gtk_tree_path_free(head_level);
-			head_level = NULL;
-		}
-		else
-		{
-			gtk_tree_store_remove(tree_store, &type_iter[i]);
-		}
+		/* drop empty groups, then expand the remaining ones one level */
+		rel_group_remove_if_empty(root, type_item[i]);
 		g_slist_free(dupe_finder_list[i]);
 		dupe_finder_list[i] = NULL;
+		g_object_unref(type_item[i]);
 	}
+
+	rel_view_expand_roots(view);
 }
 
 static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id)
 {
 	guint16 i = 0;
-	guint text_weight = PANGO_WEIGHT_NORMAL;
+	PangoWeight text_weight = PANGO_WEIGHT_NORMAL;
 	WNIPropertyItem *temp_property = NULL;
-	GtkTreeView *tree_view = NULL;
-	GtkTreeStore *tree_store = NULL;
-	GtkTreeIter iter = {0};
+	GtkWidget *view = NULL;
+	GListStore *root = NULL;
 
 	for(i = 0; 1 != id; (id = id >> 1), i++);
 
-	tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-	tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
-	g_assert(tree_store);
+	view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[i]));
+	root = rel_view_root_store(view);
 
 	while(properties)
 	{
 		temp_property = (WNIPropertyItem*) properties->data;
 		if(temp_property)
 		{
-			gtk_tree_store_append(tree_store, &iter, NULL);
+			RelItem *item = NULL;
+
 			text_weight = PANGO_WEIGHT_NORMAL;
 
 			// check if synonym has more than one mapping
@@ -1012,7 +1069,9 @@ static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNI
 			if(NULL != g_slist_nth(temp_property->mapping, 1))
 				text_weight = PANGO_WEIGHT_BOLD;
 
-			gtk_tree_store_set(tree_store, &iter, 0, temp_property->term, 1, text_weight, -1);
+			item = rel_item_new(temp_property->term, text_weight, NULL, FALSE, 0);
+			g_list_store_append(root, item);
+			g_object_unref(item);
 		}
 		properties = g_slist_next(properties);
 	}
@@ -1022,16 +1081,15 @@ static void domains_load(GSList *properties, GtkBuilder *gui_builder)
 {
 	guint8 i = 0;
 	WNIClassItem *class_item = NULL;
-	GtkTreeView *tree_class = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[TREE_DOMAIN]));
-	GtkTreeStore *class_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_class));
-	GtkTreeIter iter = {0}, class_iter[DOMAINS_COUNT] = {{0}};
-
-	g_assert(class_tree_store);
+	GtkWidget *view = GTK_WIDGET(gtk_builder_get_object(gui_builder, relative_tree[TREE_DOMAIN]));
+	GListStore *root = rel_view_root_store(view);
+	RelItem *class_group[DOMAINS_COUNT] = {NULL};
 
 	for(i = 0; i < DOMAINS_COUNT; i++)
 	{
-		gtk_tree_store_append(class_tree_store, &class_iter[i], NULL);
-		gtk_tree_store_set(class_tree_store, &class_iter[i], 0, domain_types[i], 1, PANGO_WEIGHT_SEMIBOLD, -1);
+		class_group[i] = rel_item_new(domain_types[i], PANGO_WEIGHT_SEMIBOLD, NULL, TRUE, 0);
+		rel_item_ensure_children(class_group[i]); /* before the tree model sees the group */
+		g_list_store_append(root, class_group[i]);
 	}
 
 	while(properties)
@@ -1039,19 +1097,26 @@ static void domains_load(GSList *properties, GtkBuilder *gui_builder)
 		class_item = (WNIClassItem*) properties->data;
 		if(class_item)
 		{
-			gtk_tree_store_append(class_tree_store, &iter, &class_iter[class_item->type - CLASSIF_CATEGORY]);
-			gtk_tree_store_set(class_tree_store, &iter, 0, class_item->term, 1, PANGO_WEIGHT_NORMAL, -1);
+			RelItem *item = NULL;
+			gint8 type = class_item->type - CLASSIF_CATEGORY;
+			GListStore *group_store = (type >= 0 && type < DOMAINS_COUNT) ? rel_item_ensure_children(class_group[type]) : root;
+
+			item = rel_item_new(class_item->term, PANGO_WEIGHT_NORMAL, NULL, FALSE, 0);
+			g_list_store_append(group_store, item);
+			g_object_unref(item);
 		}
 		properties = g_slist_next(properties);
 	}
-	
+
 	for(i = 0; i < DOMAINS_COUNT; i++)
 	{
-		if(!gtk_tree_model_iter_has_child(GTK_TREE_MODEL(class_tree_store), &class_iter[i]))
-			gtk_tree_store_remove(class_tree_store, &class_iter[i]);
+		rel_group_remove_if_empty(root, class_group[i]);
+		g_object_unref(class_group[i]);
 	}
 
-	gtk_tree_view_expand_all(tree_class);
+	/* the old code expanded everything; here every remaining row is either a
+	   root-level group or a leaf, so expanding the groups is equivalent */
+	rel_view_expand_roots(view);
 }
 
 static guint8 get_attribute_pos()
@@ -1110,11 +1175,9 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 
 	guint8 i = 0;
 	gboolean store_empty = TRUE, page_set = FALSE;
-	GtkTreeView *temp_tree_view = NULL;
-	GtkTreeStore *temp_tree_store = NULL;
+	GtkWidget *temp_tree_view = NULL;
 	GtkWidget *relative_tab = NULL, *expander = NULL;
-	GtkTreeIter temp_iter = {0};
-	
+
 	GtkLabel *tab_label = NULL;
 
 	// instead of invalidate rect redraw, we just toggle visibility
@@ -1173,15 +1236,11 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 	// set tab visibility
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
-		temp_tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-		relative_tab = gtk_widget_get_parent(GTK_WIDGET(temp_tree_view));
+		temp_tree_view = gtk_builder_get_object(gui_builder, relative_tree[i]);
+		relative_tab = gtk_widget_get_parent(temp_tree_view);
 
-		temp_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(temp_tree_view));
-		if(temp_tree_store)
-		{
-			store_empty = !gtk_tree_model_get_iter_first(GTK_TREE_MODEL(temp_tree_store), &temp_iter);
-		}
-		if(store_empty || NULL == temp_tree_store)
+		store_empty = (0 == rel_view_get_n_items(temp_tree_view)); /* reset per tab */
+		if(store_empty)
 			gtk_widget_hide(relative_tab);
 		else if(reset_tabs && !page_set)
 		{
@@ -2051,7 +2110,7 @@ static void highlight_senses_from_antonyms( guint8 category, guint16 relative_in
 	GSList *antonyms_list = NULL;
 	GSList *antonym_mapping = NULL;
 	WNIAntonymItem *antonym_item = NULL;
-	guint16 direct_count = 0, indirect_count = 0, count = 0;
+	guint16 direct_count = 0, indirect_count = 0, count = 0, indirect_term_count = 0;
 	GtkTextBuffer *buffer = NULL;
 	GtkTextMark *scroll_mark = NULL, *highlighted_mark = NULL;
 	GtkTextIter iter = {0}, end = {0};
@@ -2072,13 +2131,15 @@ static void highlight_senses_from_antonyms( guint8 category, guint16 relative_in
 				{
 					count = g_slist_length(antonym_item->implications);
 					indirect_count += count;
+					indirect_term_count++;
 					
 					if(indirect_count > relative_index)
 						indirect_count = relative_index + 1;
 				}
 
-				if((category <= DIRECT_ANT && direct_count == relative_index + 1) || 
-				(category == INDIRECT_ANT && indirect_count == relative_index + 1))
+				if((category == DIRECT_ANT && direct_count == relative_index + 1) ||
+				(category == INDIRECT_ANT && indirect_count == relative_index + 1) ||
+				(category == INDIRECT_TERM && indirect_term_count == relative_index + 1))
 				{
 					antonym_mapping = antonym_item->mapping;
 
@@ -2092,6 +2153,7 @@ static void highlight_senses_from_antonyms( guint8 category, guint16 relative_in
 					{
 						if(sub_level)
 						{
+							count = 0;
 							count += ((WNIAntonymMapping*) antonym_mapping->data)->related_word_count;
 							if(sub_level > count)
 							{
@@ -2223,132 +2285,144 @@ static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 rel
 	}
 }
 
-static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data)
+/* count how many root-level rows carry @variant, strictly before @upto;
+   used to translate a root row's position into the antonym item ordinal
+   that the properties list walk in highlight_senses_from_antonyms expects */
+static guint16 root_variant_rows_before(GListStore *root, gint variant, guint upto)
 {
-	GtkTreeIter iter = {0};
-	GtkTreeModel *tree_store = NULL;
-	gchar *term = NULL, *str_path = NULL, *str_category = NULL, *str_demark = NULL;
-	gchar str_root[3] = "";
+	guint16 count = 0;
+
+	for(guint i = 0; i < upto; i++)
+	{
+		RelItem *child = REL_ITEM(g_list_model_get_item(G_LIST_MODEL(root), i));
+
+		if(child != NULL)
+		{
+			if(!rel_item_get_is_group(child) && rel_item_get_variant(child) == variant)
+				count++;
+			g_object_unref(child);
+		}
+	}
+
+	return count;
+}
+
+static void relative_selection_changed(GtkSelectionModel *selection, guint position, guint n_items, gpointer user_data)
+{
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkNotebook *notebook = GTK_NOTEBOOK(gtk_builder_get_object(gui_builder, NOTEBOOK));
 	GtkTextView *text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 	GtkTextBuffer *buffer = NULL;
 	GtkTextIter start = {0}, end = {0};
+	gint tab = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(selection), "artha-tab"));
+	GtkWidget *view = GTK_WIDGET(g_object_get_data(G_OBJECT(selection), "artha-view"));
+	RelViewSelection sel = {0};
 	guint16 sub_level = 0;
 
-	if(gtk_tree_selection_get_selected(gtk_tree_view_get_selection(tree_view), &tree_store, &iter))
+	(void) position;
+	(void) n_items;
+
+	buffer = gtk_text_view_get_buffer(text_view);
+	gtk_text_buffer_get_start_iter(buffer, &start);
+	gtk_text_buffer_get_end_iter(buffer, &end);
+	gtk_text_buffer_remove_tag_by_name(buffer, TAG_HIGHLIGHT, &start, &end);
+
+	if(view == NULL || !rel_view_get_selection(view, &sel))
+		return;
+
+	switch(tab)
 	{
-		gtk_tree_model_get(tree_store, &iter, 0, &term, -1);
-		str_path = gtk_tree_model_get_string_from_iter(tree_store, &iter);
-		
-		buffer = gtk_text_view_get_buffer(text_view);
-		gtk_text_buffer_get_start_iter(buffer, &start);
-		gtk_text_buffer_get_end_iter(buffer, &end);
-		gtk_text_buffer_remove_tag_by_name(buffer, TAG_HIGHLIGHT, &start, &end);
-
-		if(term && str_path)
+		case TREE_SYNONYMS:
+			if(sel.depth == 0)
+				highlight_senses_from_synonyms((guint16) sel.position, text_view);
+			break;
+		case TREE_ANTONYMS:
 		{
-			switch(gtk_notebook_get_current_page(notebook))
+			gboolean direct = (sel.variant == 1 || sel.variant == 3);
+
+			if(sel.is_group)
+				break;
+
+			if(advanced_mode)
 			{
-				case TREE_SYNONYMS:
-					highlight_senses_from_synonyms((guint16) g_ascii_strtoull(str_path, NULL, 10), text_view);
-					break;
-				case TREE_ANTONYMS:
-					// to make sure no highlighting is done for categories, check for ':' in the path
-					// Categories (Direct/Indirect) won't have a parent, hence only one char. will be 
-					// there in the path; if not, a word has got selected
-					if(advanced_mode && (str_demark = g_strstr_len(str_path, -1, ":")) != NULL)
-					{
-						str_demark++;
-						str_demark = g_strstr_len(str_demark, -1, ":");
-						if(str_demark)
-						{
-							str_demark++;
-							sub_level = (guint16) g_ascii_strtoull(str_demark, NULL, 10) + 1;
-						}
-
-						gtk_tree_model_get_iter_first(tree_store, &iter);
-						gtk_tree_model_get(tree_store, &iter, 0, &str_category, -1);
-						if(str_category)
-						{
-							if(0 != g_strcmp0(str_category, STR_ANTONYM_HEADER_DIRECT)) str_path[0] = '1';
-							g_free(str_category);
-							str_category = NULL;
-						}
-
-						strip_invalid_edges(&str_path[2]);
-						/* if its a word, parent 0 means Direct and 1 Indirect */
-						highlight_senses_from_antonyms((0 == str_path[0] - '0') ? DIRECT_ANT : INDIRECT_ANT, 
-										(guint16) g_ascii_strtoull(&str_path[2], NULL, 10), 
-										sub_level, 
-										text_view);
-					}
-					else if(!advanced_mode)
-						// if its simple mode, set category to 0
-						highlight_senses_from_antonyms(0, (guint16) g_ascii_strtoull(str_path, NULL, 10), sub_level, text_view);
-					break;
-				case TREE_DOMAIN:
-					if((str_demark = g_strstr_len(str_path, -1, ":")) != NULL)
-					{
-						g_snprintf(str_root, 3, "%c", str_path[0]);
-						gtk_tree_model_get_iter_from_string(tree_store, &iter, str_root);
-
-						gtk_tree_model_get(tree_store, &iter, 0, &str_category, -1);
-						for(sub_level = 0; (0 != g_strcmp0(domain_types[sub_level], str_category)); sub_level++);
-						g_free(str_category);
-						str_category = NULL;
-
-						str_demark++;
-						highlight_senses_from_domain((guint8) sub_level, (guint16) g_ascii_strtoull(str_demark, NULL, 10), text_view);
-					}
-					break;
-				case TREE_PERTAINYMS:
-				case TREE_HYPERNYMS:
-				case TREE_HYPONYMS:
-				case TREE_HOLONYMS:
-				case TREE_MERONYMS:
-					//highlight_senses_from_relative_trees(1 << gtk_notebook_get_current_page(notebook), g_ascii_strtoull(str_path, NULL, 10), text_view);
-					break;
-				default:
-					highlight_senses_from_relative_lists(1 << gtk_notebook_get_current_page(notebook), (guint16) g_ascii_strtoull(str_path, NULL, 10), text_view);
-					break;
+				if(sel.depth <= 1 && sel.variant == 1)
+					highlight_senses_from_antonyms(DIRECT_ANT, (guint16) sel.position, 0, text_view);
+				else if(sel.variant == 3)
+					/* implication under a direct item row (advanced mode): the row's
+					   position in its parent = ordinal among direct items */
+					highlight_senses_from_antonyms(DIRECT_ANT, (guint16) sel.parent_position, (guint16) sel.position + 1, text_view);
+				else if(sel.variant == 4)
+					/* implication directly under the Indirect group (advanced mode):
+					   the flat position across the indirect implications */
+					highlight_senses_from_antonyms(INDIRECT_ANT, (guint16) sel.position, 0, text_view);
 			}
-		}
+			else
+			{
+				GListStore *root = rel_view_root_store(view);
+				gint want = direct ? 1 : 2;
 
-		g_free(term);
-		g_free(str_path);
-		term = str_path = NULL;
+				if(sel.depth == 1)
+					/* implication row: ordinal of the PARENT item among same-variant root rows */
+					highlight_senses_from_antonyms(direct ? DIRECT_ANT : INDIRECT_TERM,
+									root_variant_rows_before(root, want, sel.parent_position),
+									(guint16) sel.position + 1, text_view);
+				else
+					highlight_senses_from_antonyms(direct ? DIRECT_ANT : INDIRECT_TERM,
+									root_variant_rows_before(root, want, sel.position),
+									0, text_view);
+			}
+			break;
+		}
+		case TREE_DOMAIN:
+			if(sel.is_group)
+				break;
+			for(sub_level = 0; sub_level < DOMAINS_COUNT; sub_level++)
+				if(0 == g_strcmp0(domain_types[sub_level], sel.parent_term))
+					break;
+			if(sub_level < DOMAINS_COUNT)
+				highlight_senses_from_domain((guint8) sub_level, (guint16) sel.position, text_view);
+			break;
+		case TREE_PERTAINYMS:
+		case TREE_HYPERNYMS:
+		case TREE_HYPONYMS:
+		case TREE_HOLONYMS:
+		case TREE_MERONYMS:
+			/* tree panes intentionally do not highlight senses, as before */
+			break;
+		default:
+			if(sel.depth == 0)
+				highlight_senses_from_relative_lists(1 << tab, (guint16) sel.position, text_view);
+			break;
 	}
 }
 
-static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
+static void relative_view_activated(GtkListView *view, guint position, gpointer user_data)
 {
-	gchar *sel_term = NULL;
-	GtkTreeModel *tree_store = NULL;
-	GtkTreeIter iter = {0};
-	GtkComboBox *combo_query = NULL;
-	GtkEntry *txtQuery = NULL;
-	GtkButton *button_search = NULL;
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkSelectionModel *sel_model = gtk_list_view_get_model(view);
+	GtkTreeListModel *tree_model = GTK_TREE_LIST_MODEL(gtk_single_selection_get_model(GTK_SINGLE_SELECTION(sel_model)));
+	GtkTreeListRow *row = NULL;
 
+	if(tree_model == NULL)
+		return;
 
-	if(gtk_tree_selection_get_selected(gtk_tree_view_get_selection(tree_view), &tree_store, &iter))
+	row = gtk_tree_list_model_get_row(tree_model, position);
+	if(row != NULL)
 	{
-		gtk_tree_model_get(tree_store, &iter, 0, &sel_term, -1);
+		RelItem *item = REL_ITEM(gtk_tree_list_row_get_item(row));
 
-		if(sel_term)
+		if(!rel_item_get_is_group(item))
 		{
-			combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-			txtQuery = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
-			button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
+			GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+			GtkEntry *txtQuery = GTK_ENTRY(gtk_combo_box_get_child(combo_query));
+			GtkButton *button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
-			gtk_editable_set_text(GTK_EDITABLE(txtQuery), sel_term);
+			gtk_editable_set_text(GTK_EDITABLE(txtQuery), rel_item_get_term(item));
 
 			g_signal_emit_by_name(button_search, "clicked");
-			
-			g_free(sel_term);
-			sel_term = NULL;
 		}
+
+		g_object_unref(item);
+		g_object_unref(row);
 	}
 }
 
@@ -2577,10 +2651,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	GtkComboBox *combo_query = NULL;
 	GtkListStore *list_store_query = NULL;
 
-	GtkTreeView *tree_view = NULL;
-	GtkTreeStore *tree_store = NULL;
-	GtkCellRenderer *tree_renderer = NULL;
-	const gchar *col_name = NULL;
+	GtkListView *tree_view = NULL;
 	GtkEntry *query_entry = NULL;
 
 	// combo box data store
@@ -2603,28 +2674,15 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
-		tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-		tree_renderer = gtk_cell_renderer_text_new();
-		col_name = relative_tree[i];
-		col_name = col_name + 4;	// skip the first 4 chars "tree" in relative_tree string array
-		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tree_view), -1, col_name, tree_renderer, "text", 0, "weight", 1, NULL);
-		
-		if(i == TREE_ANTONYMS)
-		{
-			gtk_tree_view_insert_column_with_attributes(tree_view, -1, STR_ANTONYM_HEADER_INDIRECT_VIA, tree_renderer, "text", 2, NULL);
-			tree_store = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_STRING);
-		}
-		else
-			tree_store = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_UINT);
+		GtkSelectionModel *sel_model = NULL;
 
-		gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(tree_store));
-		g_object_unref(tree_store);
-		tree_store = NULL;
-				
-		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(tree_view), FALSE);
+		tree_view = GTK_LIST_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
+		rel_view_build(tree_view);
 
-		g_signal_connect(tree_view, "cursor-changed", G_CALLBACK(relative_selection_changed), gui_builder);
-		g_signal_connect(tree_view, "row-activated", G_CALLBACK(relative_row_activated), gui_builder);
+		sel_model = gtk_list_view_get_model(tree_view);
+		g_object_set_data(G_OBJECT(sel_model), "artha-tab", GINT_TO_POINTER(i));
+		g_signal_connect(sel_model, "selection-changed", G_CALLBACK(relative_selection_changed), gui_builder);
+		g_signal_connect(tree_view, "activate", G_CALLBACK(relative_view_activated), gui_builder);
 	}
 }
 

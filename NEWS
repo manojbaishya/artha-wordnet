@@ -8,7 +8,10 @@ Unreleased (Nov 12, 2026)
 	  GtkComboBox/GtkTreeView/GtkTreeModel/GtkCellRenderer*/GtkEntryCompletion
 	  stack (including gui.glade) is still called as-is; migrating to the
 	  GtkColumnView/GtkDropDown/GtkStringList successors is a separate,
-	  larger task. (The hotkey editor's GtkCellRendererAccel was already
+	  larger task. The relatives panes (13 TreeViews) were migrated in this
+	  round to GtkListView/GListStore/GtkTreeListModel (see below); the
+	  history combo + EntryCompletion (cluster A) is still pending.
+	  (The hotkey editor's GtkCellRendererAccel was already
 	  removed — see below.)
 	- dbus-glib -> GDBus (part of GLib). The single-instance logic uses a
 	  session-bus name (org.artha.unique) with RequestName; on bus failure
@@ -46,7 +49,23 @@ Unreleased (Nov 12, 2026)
 	  follow keyboard focus, not the button) with explicit reference hand-off
 	  to the window (gtk_widget_add_controller does not take the caller's
 	  reference).
-	- gtk_dialog_run is gone (nested main loops removed): all message
+	- Relatives panes (cluster B): the 13 GtkTreeView + GtkTreeStore
+	  relatives tabs (synonyms/antonyms/derivatives/pertainyms/attributes/
+	  similar/domains/causes/entails/hypernyms/hyponyms/holonyms/meronyms)
+	  are migrated to GtkListView with a shared RelItem GObject model
+	  (src/rel_item.c): root GListStore<RelItem> -> GtkTreeListModel
+	  (passthrough FALSE, autoexpand FALSE) -> GtkSingleSelection, with a
+	  shared GtkSignalListItemFactory. Antonym "via" (indirect) terms are
+	  rendered inline on the implication row (the old Indirect via Similar
+	  Term column is dropped). Advanced mode keeps Direct/Indirect group
+	  rows with implication children; simple mode flattens to term rows
+	  carrying the new INDIRECT_TERM (3) category so highlight-senses works
+	  for indirect pairs. Expandability is decided when the row enters a
+	  store, so group/term items create their children store first. Store
+	  ownership follows the transfer-full contract documented in rel_item.c
+	  (gtk_tree_list_model_new / gtk_single_selection_new consume; get_item/
+	  get_parent/get_row return new refs). Empty group rows are removed via
+	  rel_group_remove_if_empty. Zero GLib warnings at startup.
 	  dialogs present non-modally and destroy on "response". On GTK >= 4.10
 	  they are GtkAlertDialog (message = former title, detail = former
 	  body); the file chooser is GtkFileDialog (save) with the same copy

@@ -271,7 +271,7 @@ target("artha")
 
     add_files("src/gui.c", "src/mod_notify.c",
               "src/suggestions.c", "src/hotkey_editor.c",
-              "src/status_notifier.c")
+              "src/status_notifier.c", "src/rel_item.c")
 
     if is_plat("windows") then
         add_files("src/app_icon.rc")
