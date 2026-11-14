@@ -5,7 +5,7 @@
 Artha is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
 Foundation, either version 2 of the License, or (at your option) any later
-version. See `COPYING` for details.
+version. See `LICENSE` for details.
 
 ---
 
@@ -123,7 +123,7 @@ automatically on merge.
 
 ## Licence
 
-GNU General Public License v2 or later. See `COPYING`.
+GNU General Public License v2 or later. See `LICENSE`.
 
 ## More Information
 
