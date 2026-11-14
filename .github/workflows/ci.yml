@@ -72,6 +72,11 @@ jobs:
           PY
           sudo install -m 0755 /tmp/xmake /usr/local/bin/xmake
 
+      - name: Install go-task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -d /usr/local/bin
+          task --version
+
       - name: Run clang-tidy lint
         run: task lint
 
