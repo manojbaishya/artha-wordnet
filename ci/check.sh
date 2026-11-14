@@ -41,6 +41,12 @@ xmake f -P "$ROOT" --prefix="$SCRATCH"
 echo "== xmake build"
 xmake -P "$ROOT"
 
+echo "== xmake run unit tests"
+( cd "$ROOT" && xmake run artha-unit-test )
+
+echo "== xmake run integration tests"
+( cd "$ROOT" && xmake run artha-integration-test )
+
 echo "== xmake install"
 xmake install -P "$ROOT" -o "$SCRATCH"
 
