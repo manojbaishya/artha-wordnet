@@ -42,7 +42,7 @@
 -- that is built and tested.
 
 set_project("artha")
-set_version("1.0.5")
+set_version("1.1.0-rc1")
 set_description("A cross-platform open-source thesaurus based on WordNet")
 set_license("GPL-2.0-or-later")
 set_xmakever("3.0.0")
@@ -115,7 +115,7 @@ local common_defines = {
     -- package metadata defines fed to the sources
     'ARTHA_NAME="Artha"',
     'ARTHA_TARNAME="artha"',
-    'ARTHA_VERSION="1.0.5"',
+    'ARTHA_VERSION="1.1.0-rc1"',
     'ARTHA_URL="http://artha.sourceforge.net/"',
     'APP_DIR="' .. app_dir .. '"',
     'ICON_DIR="' .. icon_dir .. '"',
