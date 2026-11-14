@@ -3,7 +3,6 @@
   <requires lib="gtk" version="4.0"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="optionsDialog">
-    <property name="can-focus">False</property>
     <property name="title" translatable="yes">Artha ~ Options</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
@@ -11,7 +10,6 @@
     <child>
       <object class="GtkBox" id="optionsBox">
         <property name="orientation">vertical</property>
-        <property name="can-focus">False</property>
         <property name="margin-top">12</property>
         <property name="margin-bottom">12</property>
         <property name="margin-start">12</property>
@@ -21,7 +19,6 @@
           <object class="GtkCheckButton" id="chkBtnStatusIcon">
             <property name="label" translatable="yes">Hide _status icon (runs Artha invisibly)</property>
             <property name="visible">True</property>
-            <property name="can-focus">True</property>
             <property name="use-underline">True</property>
           </object>
         </child>
@@ -29,27 +26,23 @@
           <object class="GtkCheckButton" id="chkBtnLaunchMin">
             <property name="label" translatable="yes">Show Artha's _window on launch</property>
             <property name="visible">True</property>
-            <property name="can-focus">True</property>
             <property name="use-underline">True</property>
           </object>
         </child>
         <child>
           <object class="GtkBox" id="vboxPolysemy">
             <property name="orientation">vertical</property>
-            <property name="can-focus">False</property>
             <property name="spacing">2</property>
             <child>
               <object class="GtkCheckButton" id="chkBtnPolysemy">
                 <property name="label" translatable="yes">Show _familiarity based on polysemy count</property>
                 <property name="visible">True</property>
-                <property name="can-focus">True</property>
                 <property name="use-underline">True</property>
               </object>
             </child>
             <child>
               <object class="GtkLabel" id="lblPolysemy">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Polysemy count is the number of senses a term has in a given part of speech. Based on this count WordNet classifies a term as &lt;i&gt;Rare&lt;/i&gt;, &lt;i&gt;Common&lt;/i&gt;, &lt;i&gt;very familiar&lt;/i&gt;, etc.</property>
                 <property name="use-markup">True</property>
                 <property name="wrap">True</property>
@@ -61,17 +54,14 @@
         <child>
           <object class="GtkBox" id="vboxHotkey">
             <property name="orientation">vertical</property>
-            <property name="can-focus">False</property>
             <property name="spacing">4</property>
             <child>
               <object class="GtkBox" id="hboxHotkey">
                 <property name="orientation">horizontal</property>
-                <property name="can-focus">False</property>
                 <property name="spacing">10</property>
                 <child>
                   <object class="GtkLabel" id="lblHotkey">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
                     <property name="label" translatable="yes">Global Lookup _Hotkey</property>
                     <property name="use-markup">True</property>
                     <property name="use-underline">True</property>
@@ -83,7 +73,6 @@
             <child>
               <object class="GtkLabel" id="lblHotkeyDesc">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Artha can be summoned (from inside any window) with a key combination (global accelerator) to lookup the selected text in thesaurus.
 
 This hotkey can be set by clicking on the Hotkey above box and pressing the required key combination. Press backspace to disable this functionality.</property>
@@ -98,14 +87,12 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
         <child>
           <object class="GtkBox" id="optionsActionBox">
             <property name="orientation">horizontal</property>
-            <property name="can-focus">False</property>
             <property name="halign">end</property>
             <property name="spacing">6</property>
             <child>
               <object class="GtkButton" id="btnCancel">
                 <property name="label" translatable="yes">_Cancel</property>
                 <property name="visible">True</property>
-                <property name="can-focus">True</property>
                 <property name="use-underline">True</property>
               </object>
             </child>
@@ -113,7 +100,6 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
               <object class="GtkButton" id="btnApply">
                 <property name="label" translatable="yes">_Apply</property>
                 <property name="visible">True</property>
-                <property name="can-focus">True</property>
                 <property name="use-underline">True</property>
               </object>
             </child>
@@ -123,19 +109,16 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
     </child>
   </object>
   <object class="GtkWindow" id="wndMain">
-    <property name="can-focus">False</property>
     <property name="title" translatable="yes">Artha ~ The Open Thesaurus</property>
     <property name="default-width">600</property>
     <property name="default-height">550</property>
     <child>
       <object class="GtkBox" id="vbox1">
         <property name="orientation">vertical</property>
-        <property name="can-focus">False</property>
         <child>
           <object class="GtkBox" id="toolbar">
             <property name="orientation">horizontal</property>
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
             <property name="spacing">4</property>
             <property name="margin-top">2</property>
             <property name="margin-bottom">2</property>
@@ -146,7 +129,6 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
         <child>
           <object class="GtkPaned" id="vpanedBody">
             <property name="visible">True</property>
-            <property name="can-focus">True</property>
             <property name="orientation">vertical</property>
             <property name="resize-start-child">True</property>
             <property name="resize-end-child">True</property>
@@ -156,12 +138,10 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
             <child>
               <object class="GtkFrame" id="frameDefn">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
                 <child>
                   <object class="GtkBox" id="vbox2">
                     <property name="orientation">vertical</property>
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
                     <property name="margin-top">10</property>
                     <property name="margin-bottom">10</property>
                     <property name="margin-start">10</property>
@@ -170,29 +150,29 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                       <object class="GtkBox" id="hboxBody">
                         <property name="orientation">horizontal</property>
                         <property name="visible">True</property>
-                        <property name="can-focus">False</property>
                         <property name="spacing">5</property>
                         <child>
                           <object class="GtkLabel" id="lblSearch">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">_Query</property>
                             <property name="use-underline">True</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkComboBox" id="cboQuery">
+                          <object class="GtkEntry" id="cboQuery">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="has-entry">True</property>
                             <property name="hexpand">True</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkDropDown" id="cboHistory">
+                            <property name="visible">True</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkButton" id="btnSearch">
                             <property name="label" translatable="yes">_Search</property>
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="use-underline">True</property>
                           </object>
                         </child>
@@ -201,14 +181,12 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                     <child>
                       <object class="GtkScrolledWindow" id="scrollWndDefns">
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
                         <property name="hscrollbar-policy">automatic</property>
                         <property name="vscrollbar-policy">automatic</property>
                         <property name="vexpand">True</property>
                         <child>
                           <object class="GtkTextView" id="txtDefinitions">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="pixels-above-lines">4</property>
                             <property name="pixels-below-lines">4</property>
                             <property name="pixels-inside-wrap">2</property>
@@ -227,17 +205,14 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
             <child>
               <object class="GtkFrame" id="frameRelatives">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
                 <child>
                   <object class="GtkExpander" id="expander">
                     <property name="visible">True</property>
-                    <property name="can-focus">True</property>
                     <property name="expanded">True</property>
                     <property name="use-underline">True</property>
                     <property name="label-widget">
                       <object class="GtkLabel" id="lblRelatives">
                         <property name="visible">True</property>
-                        <property name="can-focus">False</property>
                         <property name="label" translatable="yes">_Relatives</property>
                         <property name="use-underline">True</property>
                       </object>
@@ -245,7 +220,6 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                     <property name="child">
                       <object class="GtkNotebook" id="notebook">
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
                         <property name="margin-top">10</property>
                         <property name="margin-bottom">10</property>
                         <property name="margin-start">10</property>
@@ -256,13 +230,11 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndSynonyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeSynonyms">
+                              <object class="GtkListView" id="treeSynonyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -270,20 +242,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblSynonyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Synonyms</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndAntonyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeAntonyms">
+                              <object class="GtkListView" id="treeAntonyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -291,20 +260,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblAntonyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Antonyms</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndDerivatives">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeDerivatives">
+                              <object class="GtkListView" id="treeDerivatives">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -312,20 +278,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblDerivatives">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Derivatives</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndPertainyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treePertainyms">
+                              <object class="GtkListView" id="treePertainyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -333,20 +296,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblPertainyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Relates to</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndAttributes">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeAttributes">
+                              <object class="GtkListView" id="treeAttributes">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -354,20 +314,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblAttributes">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Attributes</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndSimilar">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeSimilar">
+                              <object class="GtkListView" id="treeSimilar">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -375,20 +332,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblSimilar">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Similar</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndDomain">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeDomain">
+                              <object class="GtkListView" id="treeDomain">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -396,20 +350,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblDomain">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Domain</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndCauses">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeCauses">
+                              <object class="GtkListView" id="treeCauses">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -417,20 +368,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblCauses">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Causes</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndEntails">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeEntails">
+                              <object class="GtkListView" id="treeEntails">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -438,20 +386,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblEntails">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Entails</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndHypernyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeHypernyms">
+                              <object class="GtkListView" id="treeHypernyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -459,20 +404,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblHypernyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Kind of</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndHyponyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeHyponyms">
+                              <object class="GtkListView" id="treeHyponyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -480,20 +422,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblHyponyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Kinds</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndHolonyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeHolonyms">
+                              <object class="GtkListView" id="treeHolonyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -501,20 +440,17 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblHolonyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Part of</property>
                           </object>
                         </child>
                         <child>
                           <object class="GtkScrolledWindow" id="scrollWndMeronyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
                             <property name="hscrollbar-policy">automatic</property>
                             <property name="vscrollbar-policy">automatic</property>
                             <child>
-                              <object class="GtkTreeView" id="treeMeronyms">
+                              <object class="GtkListView" id="treeMeronyms">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
                               </object>
                             </child>
                           </object>
@@ -522,7 +458,6 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <child type="tab">
                           <object class="GtkLabel" id="lblMeronyms">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Parts</property>
                           </object>
                         </child>
@@ -537,7 +472,6 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
         <child>
           <object class="GtkBox" id="statusbar">
             <property name="orientation">horizontal</property>
-            <property name="can-focus">False</property>
             <property name="margin-top">2</property>
             <property name="margin-bottom">2</property>
             <property name="margin-start">4</property>
@@ -545,7 +479,6 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
             <child>
               <object class="GtkLabel" id="statusLabel">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
                 <property name="halign">start</property>
                 <property name="valign">center</property>
                 <property name="ellipsize">end</property>

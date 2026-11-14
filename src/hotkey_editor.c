@@ -13,14 +13,19 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 
 /*
- * This code sets up the GtkCellRendererAccelMode for the tree view 
- * of hotkey changer dialog.
+ * This code sets up the hotkey editor button used in the hotkey changer
+ * dialog. The button displays the current global hotkey (via
+ * gtk_accelerator_get_label()); while it is in capture mode it records
+ * the next key combination pressed.
+ *
+ * This used to be a one-row GtkTreeView with a GtkCellRendererAccel,
+ * neither of which exists in GTK 4.
  */
 
 
@@ -39,15 +44,11 @@ taken up by another application. Please choose a different one!"
 
 #define STR_INVALID_HOTKEY_TITLE	"Invalid Hotkey"
 
-/* enum for GtkTreeView */
-enum
-{
-	HOTKEY_COLUMN = 0,
-	NUM_COLUMNS
-};
+#define STR_CAPTURE_PROMPT		"Press Shortcut…"
+#define STR_NO_HOTKEY			"None"
 
 /* these keys should never be part of the hotkey combo */
-static const guint forbidden_keyvals[] = 
+static const guint forbidden_keyvals[] =
 {
 	/* Navigation keys */
 	GDK_KEY_Home,
@@ -70,6 +71,39 @@ static const guint forbidden_keyvals[] =
 	GDK_KEY_Print,
 	GDK_KEY_Insert
 };
+
+/* modifier keyvals that can never complete a hotkey combo on their own;
+   while capturing we swallow them and keep waiting for a real key */
+static gboolean keyval_is_modifier(guint keyval)
+{
+	switch(keyval)
+	{
+		case GDK_KEY_Shift_L:
+		case GDK_KEY_Shift_R:
+		case GDK_KEY_Control_L:
+		case GDK_KEY_Control_R:
+		case GDK_KEY_Meta_L:
+		case GDK_KEY_Meta_R:
+		case GDK_KEY_Alt_L:
+		case GDK_KEY_Alt_R:
+		case GDK_KEY_Super_L:
+		case GDK_KEY_Super_R:
+		case GDK_KEY_Hyper_L:
+		case GDK_KEY_Hyper_R:
+		case GDK_KEY_ISO_Level3_Shift:
+		case GDK_KEY_ISO_Level5_Shift:
+		/* GDK_KEY_ISO_Group_Shift is an alias of GDK_KEY_Mode_switch (same value) */
+		case GDK_KEY_Mode_switch:
+		case GDK_KEY_Caps_Lock:
+		case GDK_KEY_Num_Lock:
+		case GDK_KEY_Scroll_Lock:
+		case GDK_KEY_Multi_key:
+		case GDK_KEY_ISO_Enter:
+			return TRUE;
+		default:
+			return FALSE;
+	}
+}
 
 gboolean grab_ungrab_with_ignorable_modifiers(ArthaAccelKey *binding, gboolean grab);
 extern ArthaAccelKey app_hotkey;
@@ -105,11 +139,11 @@ static void hk_show_message(GtkWidget *view, const gchar *title, const gchar *bo
 #else
 	{
 		GtkWidget *msg_dialog = gtk_message_dialog_new(parent,
-							    GTK_DIALOG_DESTROY_WITH_PARENT,
-							    GTK_MESSAGE_WARNING,
-							    GTK_BUTTONS_OK,
-							    "%s",
-							    body);
+						    GTK_DIALOG_DESTROY_WITH_PARENT,
+						    GTK_MESSAGE_WARNING,
+						    GTK_BUTTONS_OK,
+						    "%s",
+						    body);
 		g_object_set(msg_dialog, "title", title, NULL);
 		g_signal_connect(msg_dialog, "response", G_CALLBACK(hk_message_dialog_destroy), NULL);
 		gtk_window_present(GTK_WINDOW(msg_dialog));
@@ -131,36 +165,135 @@ static gboolean keyval_is_forbidden (guint keyval)
 	return FALSE;
 }
 
-static void accel_edited_callback(GtkCellRendererText *cell, const char *path_string, guint accel_key, 
-				  GdkModifierType accel_mods, guint hardware_keycode, gpointer data)
+/* the button doubles as the state: capture mode is on while it shows the
+   prompt; capturing is a plain boolean so we don't keep extra objects alive */
+static gboolean capturing = FALSE;
+
+static void hotkey_editor_refresh_label(GtkWidget *button)
 {
-	GtkTreeView *view = (GtkTreeView *)data;
-	GtkTreeModel *model = NULL;
-	GtkTreeIter iter = {0};
-	GtkTreePath *path = gtk_tree_path_new_from_string (path_string);
-	ArthaAccelKey *key_entry = NULL, temp_key = {0};
+	gchar *accel_label = NULL;
+
+	if(app_hotkey.accel_key)
+		accel_label = gtk_accelerator_get_label (app_hotkey.accel_key, app_hotkey.accel_mods);
+
+	gtk_button_set_label (GTK_BUTTON(button), accel_label ? accel_label : STR_NO_HOTKEY);
+	g_free (accel_label);
+}
+
+static void hotkey_editor_leave_capture(GtkWidget *button)
+{
+	capturing = FALSE;
+	hotkey_editor_refresh_label(button);
+}
+
+/* attach the capture key controller to the root window. GTK key events go to
+   the widget holding the keyboard focus, which is not necessarily the button;
+   a CAPTURE-phase controller on the toplevel sees every key the user presses
+   regardless of focus. Done lazily on first capture because the button is
+   not inside a window yet when create_hotkey_editor() returns.
+   Ownership: gtk_widget_add_controller() does NOT take over our reference —
+   releasing it would leave the window holding a dangling controller (assert
+   storm on every crossing/key event). steal_data() moves our reference out
+   of the button marker without firing the destroy notify; the dialog then
+   parks it in the root and the window's lifetime keeps it valid. */
+static void hotkey_editor_attach_capture_controller(GtkWidget *button)
+{
+	GtkWidget *root = GTK_WIDGET(gtk_widget_get_root(button));
+	GtkEventController *controller = GTK_EVENT_CONTROLLER(
+		g_object_steal_data(G_OBJECT(button), "artha-capture-controller"));
+
+	if(controller == NULL)
+		return;
+
+	if(root == NULL ||
+	   g_object_get_data(G_OBJECT(root), "artha-capture-controller-added") != NULL)
+	{
+		g_object_unref(controller);
+		return;
+	}
+
+	gtk_widget_add_controller(root, controller);
+	g_object_set_data(G_OBJECT(root), "artha-capture-controller-added", GINT_TO_POINTER(1));
+	/* root now owns the controller; the window lives for the app's lifetime */
+	g_object_set_data_full(G_OBJECT(root), "artha-capture-controller-keep",
+			       controller, g_object_unref);
+}
+
+static void hotkey_editor_button_clicked(GtkButton *button, gpointer user_data)
+{
+	(void) user_data;
+
+	if(capturing)
+	{
+		/* click while capturing cancels; the hotkey stays unchanged */
+		hotkey_editor_leave_capture(GTK_WIDGET(button));
+		return;
+	}
+	capturing = TRUE;
+	gtk_button_set_label (button, STR_CAPTURE_PROMPT);
+	hotkey_editor_attach_capture_controller(GTK_WIDGET(button));
+	gtk_widget_grab_focus (GTK_WIDGET(button));
+}
+
+static void hotkey_editor_focus_leave(GtkEventControllerFocus *controller, gpointer user_data)
+{
+	GtkWidget *button = GTK_WIDGET(user_data);
+
+	(void) controller;
+
+	/* focus moved elsewhere while capturing: cancel, like the old cell renderer did */
+	if(capturing)
+		hotkey_editor_leave_capture(button);
+}
+
+static gboolean hotkey_editor_key_pressed(GtkEventControllerKey *controller, guint keyval,
+					     guint keycode, GdkModifierType state, gpointer user_data)
+{
+	GtkWidget *button = GTK_WIDGET(user_data);
+	ArthaAccelKey temp_key = {0};
 	gchar *temp_str = NULL;
 	gboolean reg_succeeded = FALSE;
 
-	model = gtk_tree_view_get_model (view);
-	gtk_tree_model_get_iter (model, &iter, path);
-	gtk_tree_path_free (path);
-	gtk_tree_model_get (model, &iter, HOTKEY_COLUMN, &key_entry, -1);
-
-	/* sanity check and check to see if the same key combo was pressed again */
-	if(key_entry == NULL || 
-	(key_entry->accel_key == accel_key && 
-	key_entry->accel_mods == accel_mods && 
-	key_entry->accel_flags == hardware_keycode))
-		return;
+	(void) controller;
+	if(!capturing)
+		return FALSE;
 
 	/* CapsLock isn't supported as a keybinding modifier, so keep it from confusing us */
-	accel_mods &= ~GDK_LOCK_MASK;
+	state &= ~GDK_LOCK_MASK;
 
-	temp_key.accel_key = accel_key;
-	temp_key.accel_flags = hardware_keycode;
-	temp_key.accel_mods   = accel_mods;
+	if(keyval == GDK_KEY_Escape)
+	{
+		/* cancel capture; the hotkey stays unchanged */
+		hotkey_editor_leave_capture(button);
+		return TRUE;
+	}
 
+	if(keyval == GDK_KEY_BackSpace || keyval == GDK_KEY_Delete)
+	{
+		/* clear the hotkey */
+		if(app_hotkey.accel_key)
+			grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE);
+		app_hotkey.accel_key = app_hotkey.accel_mods = app_hotkey.accel_flags = 0;
+		hotkey_editor_leave_capture(button);
+		return TRUE;
+	}
+
+	/* pure modifier press: keep capturing and wait for the real key */
+	if(keyval_is_modifier(keyval))
+		return TRUE;
+
+	temp_key.accel_key = keyval;
+	temp_key.accel_flags = keycode;
+	temp_key.accel_mods = state;
+
+	/* sanity check and check to see if the same key combo was pressed again */
+	if(app_hotkey.accel_key == temp_key.accel_key &&
+	   app_hotkey.accel_mods == temp_key.accel_mods &&
+	   app_hotkey.accel_flags == temp_key.accel_flags)
+	{
+		hotkey_editor_leave_capture(button);
+		return TRUE;
+	}
 
 	/* Check for unmodified keys */
 	if(temp_key.accel_mods == 0 && temp_key.accel_key != 0)
@@ -178,11 +311,12 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 		   || (temp_key.accel_key >= GDK_KEY_Hangul_Kiyeog && temp_key.accel_key <= GDK_KEY_Hangul_J_YeorinHieuh)
 		   || keyval_is_forbidden (temp_key.accel_key))
 		{
-			temp_str = gtk_accelerator_get_label (accel_key, accel_mods);
+			temp_str = gtk_accelerator_get_label (keyval, state);
 
-			hk_show_message(GTK_WIDGET(view), STR_INVALID_HOTKEY_TITLE, STR_INVALID_HOTKEY, temp_str);
+			hotkey_editor_leave_capture(button);
+			hk_show_message(button, STR_INVALID_HOTKEY_TITLE, STR_INVALID_HOTKEY, temp_str);
 			g_free (temp_str); temp_str = NULL;
-			return;
+			return TRUE;
 		}
 	}
 
@@ -190,118 +324,72 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 	/* Vista onwards calling RegisterHotKey registers more than one hotkey
 	with the same ID, avoid this by unregistering before registering
 	a new one */
-	if(!key_entry->accel_key || grab_ungrab_with_ignorable_modifiers(key_entry, FALSE))
+	if(!app_hotkey.accel_key || grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE))
 	{
 		reg_succeeded = grab_ungrab_with_ignorable_modifiers(&temp_key, TRUE);
 		/* if the new hotkey couldn't be set, then reset the old hotkey */
 		if(!reg_succeeded)
 		{
-			grab_ungrab_with_ignorable_modifiers(key_entry, TRUE);
+			grab_ungrab_with_ignorable_modifiers(&app_hotkey, TRUE);
 		}
 #else
 	/* try registering the new key combo */
 	if((reg_succeeded = grab_ungrab_with_ignorable_modifiers(&temp_key, TRUE)))
 	{
 		/* unregister the previous hotkey */
-		grab_ungrab_with_ignorable_modifiers(key_entry, FALSE);
+		grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE);
 #endif
 	}
 
 	if(reg_succeeded)
 	{
-		/* set the value in the list store to the newly set key combo
-		so that it gets reflected in the Accel Cell Renderer */
-		*key_entry = temp_key;
+		/* set the value so that it gets reflected in the button label */
+		app_hotkey = temp_key;
 	}
 	else
 	{
-		temp_str = gtk_accelerator_get_label (accel_key, accel_mods);
+		temp_str = gtk_accelerator_get_label (keyval, state);
 
-
-		hk_show_message(GTK_WIDGET(view), STR_INVALID_HOTKEY_TITLE, STR_DUPLICATE_HOTKEY, temp_str);
+		hotkey_editor_leave_capture(button);
+		hk_show_message(button, STR_INVALID_HOTKEY_TITLE, STR_DUPLICATE_HOTKEY, temp_str);
 
 		g_free (temp_str); temp_str = NULL;
 
-		return;
+		return TRUE;
 	}
-}
 
-static void accel_cleared_callback (GtkCellRendererText *cell, const char *path_string, gpointer data)
-{
-	GtkTreeView *view = (GtkTreeView *) data;
-	GtkTreePath *path = gtk_tree_path_new_from_string (path_string);
-	ArthaAccelKey *key_entry = NULL;
-	GtkTreeIter iter = {0};
-	GtkTreeModel *model = NULL;
-
-	model = gtk_tree_view_get_model (view);
-	gtk_tree_model_get_iter (model, &iter, path);
-	gtk_tree_path_free (path);
-	gtk_tree_model_get (model, &iter, HOTKEY_COLUMN, &key_entry, -1);
-
-	g_assert(key_entry);
-
-	/* unregister what's previously registered */
-	grab_ungrab_with_ignorable_modifiers(key_entry, FALSE);
-
-	key_entry->accel_key = key_entry->accel_mods = key_entry->accel_flags = 0;
-}
-
-static void accel_set_func (GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
-{
-	ArthaAccelKey *key_entry = NULL;
-
-	gtk_tree_model_get (model, iter, HOTKEY_COLUMN, &key_entry, -1);
-
-	/* if key entry is not NULL, set properties of Egg Cell Renderer */
-	if(key_entry)
-	{
-		g_object_set (cell, "visible", TRUE, /*"editable", TRUE,*/ "accel-key", key_entry->accel_key, "accel-mods", key_entry->accel_mods,
-				"keycode", key_entry->accel_flags, "style", PANGO_STYLE_NORMAL, NULL);
-	}
-	else
-		g_object_set (cell, "visible", FALSE, NULL);
+	hotkey_editor_leave_capture(button);
+	return TRUE;
 }
 
 GtkWidget* create_hotkey_editor(void)
 {
-	GtkWidget *hotkey_tree_view = NULL;
-	GtkCellRenderer *renderer = NULL;
-	GtkListStore  *model = NULL;
-	GtkTreeViewColumn *column = NULL;
-	GtkTreeIter iter = {0};
+	GtkWidget *hotkey_button = NULL;
+	GtkEventController *key_controller = NULL;
+	GtkEventController *focus_controller = NULL;
 
-	/* create a tree view */
-	hotkey_tree_view = gtk_tree_view_new();
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(hotkey_tree_view), FALSE);
-	g_object_set(hotkey_tree_view, "visible", TRUE, NULL);
+	/* a flat button displaying the current accelerator; activate it to capture
+	   the next key combo, Escape to cancel, BackSpace/Delete to clear */
+	hotkey_button = gtk_button_new_with_label(STR_NO_HOTKEY);
+	gtk_widget_set_hexpand(hotkey_button, TRUE);
+	gtk_widget_set_halign(hotkey_button, GTK_ALIGN_FILL);
+	g_object_set(hotkey_button, "visible", TRUE, NULL);
 
-	/* create the Egg Cell Renderer and connect to signals */
-	renderer = (GtkCellRenderer*) gtk_cell_renderer_accel_new ();
-	g_object_set(renderer, "editable", TRUE, NULL);
-	g_signal_connect (renderer, "accel-edited", G_CALLBACK (accel_edited_callback), hotkey_tree_view);
-	g_signal_connect (renderer, "accel-cleared", G_CALLBACK (accel_cleared_callback), hotkey_tree_view);
+	key_controller = gtk_event_controller_key_new();
+	/* CAPTURE phase + attached to the root window (see button_clicked), so the
+	   next key combo is recorded even if focus is not on the button */
+	gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
+	g_signal_connect(key_controller, "key-pressed", G_CALLBACK(hotkey_editor_key_pressed), hotkey_button);
+	g_object_set_data_full(G_OBJECT(hotkey_button), "artha-capture-controller",
+			       key_controller, g_object_unref);
 
-	/* create a column and set the created renderer - append the same to the tree view */
-	column = gtk_tree_view_column_new_with_attributes ("Shortcut", renderer, NULL);
-	/* since it's a custom renderer, setting the data to the cell needs to be custom as well */
-	gtk_tree_view_column_set_cell_data_func (column, renderer, accel_set_func, NULL, NULL);
-	gtk_tree_view_append_column (GTK_TREE_VIEW(hotkey_tree_view), column);
+	focus_controller = gtk_event_controller_focus_new();
+	g_signal_connect(focus_controller, "leave", G_CALLBACK(hotkey_editor_focus_leave), hotkey_button);
+	gtk_widget_add_controller(hotkey_button, focus_controller);
 
-	/* create the list store for the tree */
-	model = gtk_list_store_new (1, G_TYPE_POINTER);
-	gtk_tree_view_set_model (GTK_TREE_VIEW (hotkey_tree_view), GTK_TREE_MODEL(model));
+	g_signal_connect(hotkey_button, "clicked", G_CALLBACK(hotkey_editor_button_clicked), NULL);
 
-	gtk_list_store_append (model, &iter);
-	gtk_list_store_set (model, &iter, HOTKEY_COLUMN, &app_hotkey, -1);
+	hotkey_editor_refresh_label(hotkey_button);
 
-	/* The tree view has acquired its own reference to the
-	 *  model, so we can drop ours. That way the model will
-	 *  be freed automatically when the tree view is destroyed */
-	g_object_unref (model);
-
-	g_object_set(hotkey_tree_view, "visible", TRUE, NULL);
-
-	return hotkey_tree_view;
+	return hotkey_button;
 }
-
