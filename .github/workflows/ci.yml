@@ -74,7 +74,7 @@ jobs:
 
       - name: Install go-task
         run: |
-          curl -sL https://taskfile.dev/install.sh | sh -s -- -d /usr/local/bin
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
           task --version
 
       - name: Run clang-tidy lint
