@@ -113,11 +113,11 @@ jobs:
       - name: Build Flatpak bundle
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          rm -rf /tmp/fb-out
+          rm -rf /tmp/fb-out /tmp/fb-repo
           flatpak-builder --disable-rofiles-fuse \
-            --state-dir="$HOME/.cache/fb-state" --force-clean \
+            --repo=/tmp/fb-repo --state-dir="$HOME/.cache/fb-state" --force-clean \
             /tmp/fb-out flatpak/org.artha.Artha.json
-          flatpak build-bundle /tmp/fb-out org.artha.Artha.flatpak org.artha.Artha
+          flatpak build-bundle /tmp/fb-repo org.artha.Artha.flatpak org.artha.Artha master
           ls -la org.artha.Artha.flatpak
 
       - name: Upload Flatpak bundle
