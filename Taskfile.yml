@@ -163,3 +163,19 @@ tasks:
       - 'G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-unit-test'
       - 'G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-integration-test'
       - 'gcov --object-directory={{.SANDBOX}}/coverage $(find {{.ROOT}}/src -name "*.c" ! -path "{{.ROOT}}/src/platform/windows/*" ! -path "{{.ROOT}}/src/platform/libnotify.c")'
+
+  lint-shell:
+    desc: shellcheck on project-owned shell scripts (ci/check.sh, tests/smoke/test_smoke.sh)
+    cmds:
+      - 'shellcheck {{.ROOT}}/ci/check.sh {{.ROOT}}/tests/smoke/test_smoke.sh'
+
+  lint-python:
+    desc: ruff on project-owned Python files (behavioral runner, steps, manifest generator)
+    cmds:
+      - 'ruff check {{.ROOT}}/tests/behavioral/conftest.py {{.ROOT}}/tests/behavioral/run_tests.py {{.ROOT}}/tests/behavioral/steps/test_steps.py {{.ROOT}}/tools/gen_flatpak_manifest.py'
+
+  lint-shell-python:
+    desc: Run lint-shell + lint-python together (combined shell + Python lint gate)
+    deps:
+      - lint-shell
+      - lint-python

@@ -20,8 +20,7 @@ from pathlib import Path
 
 # Make `steps` importable when run from the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from steps.test_steps import find_step  # noqa: E402
-
+from steps.test_steps import find_step
 
 FEATURE_DIR = Path(__file__).resolve().parent / "features"
 
@@ -35,7 +34,7 @@ def parse_feature(path: Path):
     with path.open() as fh:
         for raw in fh:
             line = raw.strip()
-            if not line or line.startswith("#") or line.startswith("Feature:"):
+            if not line or line.startswith(("#", "Feature:")):
                 continue
             if line.startswith("Background:"):
                 in_background = True
@@ -48,14 +47,20 @@ def parse_feature(path: Path):
                 steps = []
                 in_background = False
                 continue
-            for kw in ("Given", "When", "Then", "And", "But"):
-                if line.startswith(kw + " "):
-                    step = (kw, line[len(kw) :].strip())
-                    if in_background:
-                        background_steps.append(step)
-                    else:
-                        steps.append(step)
-                    break
+            matched = next(
+                (
+                    kw
+                    for kw in ("Given", "When", "Then", "And", "But")
+                    if line.startswith(kw + " ")
+                ),
+                None,
+            )
+            if matched is not None:
+                step = (matched, line[len(matched) :].strip())
+                if in_background:
+                    background_steps.append(step)
+                else:
+                    steps.append(step)
     # flush last scenario
     if scenario is not None:
         yield scenario, background_steps + steps

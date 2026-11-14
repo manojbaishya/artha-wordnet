@@ -12,28 +12,28 @@ Until then, use the dependency-free runner: tests/behavioral/run_tests.py
 
 from __future__ import annotations
 
-from steps.test_steps import (  # noqa: F401  (imported for pytest-bdd binding)
+from steps.test_steps import (
     step_binary_built_staged,
     step_exits_without_hanging,
     step_launch_artha,
     step_launch_artha_no_display,
     step_no_display,
-    step_scratch_home_xdg,
     step_scratch_contains_only_artha_files,
-    step_stop_artha,
+    step_scratch_home_xdg,
     step_stays_running_2s,
+    step_stop_artha,
     step_writes_preferences,
 )
 
 __all__ = [
-    "step_scratch_home_xdg",
     "step_binary_built_staged",
-    "step_no_display",
+    "step_exits_without_hanging",
     "step_launch_artha",
     "step_launch_artha_no_display",
-    "step_stop_artha",
-    "step_stays_running_2s",
-    "step_writes_preferences",
+    "step_no_display",
     "step_scratch_contains_only_artha_files",
-    "step_exits_without_hanging",
+    "step_scratch_home_xdg",
+    "step_stays_running_2s",
+    "step_stop_artha",
+    "step_writes_preferences",
 ]
