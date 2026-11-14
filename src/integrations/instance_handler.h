@@ -13,15 +13,13 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 
 /*
  * Header that exposes instance_handler's functions
  */
-
 
 #ifndef __INSTANCE_HANDLER_H__
 #define __INSTANCE_HANDLER_H__
@@ -32,9 +30,8 @@ G_BEGIN_DECLS
 
 gboolean instance_handler_am_i_unique(void);
 void instance_handler_send_signal(void);
-gboolean instance_handler_register_signal(GtkWindow *window);
+gboolean instance_handler_register_signal(GtkWindow* window);
 
 G_END_DECLS
 
-#endif		/* __INSTANCE_HANDLER_H__ */
-
+#endif /* __INSTANCE_HANDLER_H__ */

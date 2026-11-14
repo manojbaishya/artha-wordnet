@@ -37,35 +37,36 @@
 G_DECLARE_FINAL_TYPE(RelItem, rel_item, REL, ITEM, GObject)
 
 /* variant: 0 = plain row, 1 = direct antonym item, 2 = indirect antonym item */
-RelItem *rel_item_new(const gchar *term, PangoWeight weight, const gchar *via, gboolean is_group, gint variant);
+RelItem* rel_item_new(const gchar* term, PangoWeight weight, const gchar* via, gboolean is_group,
+                      gint variant);
 
-gboolean rel_item_get_is_group(RelItem *item);
-const gchar *rel_item_get_term(RelItem *item);
-const gchar *rel_item_get_via(RelItem *item);
-PangoWeight rel_item_get_weight(RelItem *item);
-gint rel_item_get_variant(RelItem *item);
+gboolean rel_item_get_is_group(RelItem* item);
+const gchar* rel_item_get_term(RelItem* item);
+const gchar* rel_item_get_via(RelItem* item);
+PangoWeight rel_item_get_weight(RelItem* item);
+gint rel_item_get_variant(RelItem* item);
 
 /* returns the item's children store, creating it on first use;
    NULL for leaf items */
-GListStore *rel_item_ensure_children(RelItem *item);
-GListStore *rel_item_get_children(RelItem *item);
+GListStore* rel_item_ensure_children(RelItem* item);
+GListStore* rel_item_get_children(RelItem* item);
 
 /* wires a bare GtkListView taken from the glade file: attaches the
    GListStore<RelItem> > GtkTreeListModel > GtkSingleSelection model stack
    and the shared factory. Call once per pane at startup. The selection
    model carries "artha-view" and "artha-tab" (int) data */
-void rel_view_build(GtkListView *view);
+void rel_view_build(GtkListView* view);
 
 /* the pane's root GListStore (transfer none); NULL if the pane is unwired */
-GListStore *rel_view_root_store(GtkWidget *view);
+GListStore* rel_view_root_store(GtkWidget* view);
 
-void rel_view_remove_all(GtkWidget *view);
-guint rel_view_get_n_items(GtkWidget *view);
+void rel_view_remove_all(GtkWidget* view);
+guint rel_view_get_n_items(GtkWidget* view);
 
 /* expand every expandable top-level row (i.e. the group headers);
    used for antonyms, domains and holo/meronyms. Hypernym-style nested
    trees are left collapsed, as before */
-void rel_view_expand_roots(GtkWidget *view);
+void rel_view_expand_roots(GtkWidget* view);
 
 /* selection snapshot used by the sense-highlight logic:
    - position         index within the row's sibling list
@@ -80,18 +81,17 @@ void rel_view_expand_roots(GtkWidget *view);
                       antonym, 4 implication of an indirect antonym */
 #define REL_TERM_MAX 512
 
-typedef struct
-{
-	guint position;
-	guint parent_position;
-	guint depth;
-	gboolean has_parent;
-	gchar term[REL_TERM_MAX];
-	gchar parent_term[REL_TERM_MAX];
-	gboolean is_group;
-	gint variant;
+typedef struct {
+    guint position;
+    guint parent_position;
+    guint depth;
+    gboolean has_parent;
+    gchar term[REL_TERM_MAX];
+    gchar parent_term[REL_TERM_MAX];
+    gboolean is_group;
+    gint variant;
 } RelViewSelection;
 
-gboolean rel_view_get_selection(GtkWidget *view, RelViewSelection *out);
+gboolean rel_view_get_selection(GtkWidget* view, RelViewSelection* out);
 
 #endif /* __REL_ITEM_H__ */

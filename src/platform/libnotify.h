@@ -13,23 +13,21 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 
 /*
  * libnotify (win32) export/import header
  */
 
- 
- /*
-	The following ifdef block is the standard way of creating macros which make exporting 
-	from a DLL simpler. All files within this DLL are compiled with the LIBNOTIFY_EXPORTS
-	symbol defined on the command line. This symbol should not be defined on any project
-	that uses this DLL. This way any other project whose source files include this file see 
-	LIBNOTIFY_API functions as being imported from a DLL, whereas this DLL sees symbols
-	defined with this macro as being exported.
+/*
+       The following ifdef block is the standard way of creating macros which make exporting
+       from a DLL simpler. All files within this DLL are compiled with the LIBNOTIFY_EXPORTS
+       symbol defined on the command line. This symbol should not be defined on any project
+       that uses this DLL. This way any other project whose source files include this file see
+       LIBNOTIFY_API functions as being imported from a DLL, whereas this DLL sees symbols
+       defined with this macro as being exported.
 */
 #ifndef __LIBNOTIFY_H__
 #define __LIBNOTIFY_H__
@@ -42,27 +40,20 @@
 
 #include <glib.h>
 
-typedef struct _NotifyNotification        	NotifyNotification;
+typedef struct _NotifyNotification NotifyNotification;
 
 LIBNOTIFY_API gboolean notify_init(const char* app_name);
 LIBNOTIFY_API void notify_uninit(void);
 
-LIBNOTIFY_API NotifyNotification* notify_notification_new(
-	const gchar *summary, const gchar *body,
-	const gchar *icon);
+LIBNOTIFY_API NotifyNotification* notify_notification_new(const gchar* summary, const gchar* body,
+                                                          const gchar* icon);
 
-LIBNOTIFY_API gboolean notify_notification_update
-(NotifyNotification *notification,
-        const gchar *summary,
-        const gchar *body,
-        const gchar *icon);
+LIBNOTIFY_API gboolean notify_notification_update(NotifyNotification* notification,
+                                                  const gchar* summary, const gchar* body,
+                                                  const gchar* icon);
 
-LIBNOTIFY_API gboolean notify_notification_show(
-NotifyNotification *notification,
-			GError **error);
+LIBNOTIFY_API gboolean notify_notification_show(NotifyNotification* notification, GError** error);
 
-LIBNOTIFY_API gboolean notify_notification_close(
-NotifyNotification *notification,
-			GError **error);
+LIBNOTIFY_API gboolean notify_notification_close(NotifyNotification* notification, GError** error);
 
-#endif		/* __LIBNOTIFY_H__ */
+#endif /* __LIBNOTIFY_H__ */

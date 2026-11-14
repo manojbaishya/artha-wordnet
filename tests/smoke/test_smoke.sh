@@ -17,23 +17,23 @@
 set -eu
 
 if [ $# -ge 1 ]; then
-	BIN=$1
+    BIN=$1
 else
-	ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
-	BIN=$(find "$ROOT/sandbox" -type f -name artha -path '*release*' -perm -u+x 2>/dev/null | head -n 1)
+    ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+    BIN=$(find "$ROOT/sandbox" -type f -name artha -path '*release*' -perm -u+x 2>/dev/null | head -n 1)
 fi
 if [ -z "$BIN" ] || [ ! -x "$BIN" ]; then
-	echo "test_smoke: artha binary not found (pass it as \$1 or build first)" >&2
-	exit 1
+    echo "test_smoke: artha binary not found (pass it as \$1 or build first)" >&2
+    exit 1
 fi
 
 # Re-exec under xvfb-run when there is no X display.
 if [ -z "${DISPLAY:-}" ] && [ -z "${ARTHA_SMOKE_XVFB:-}" ]; then
-	if command -v xvfb-run >/dev/null 2>&1; then
-		ARTHA_SMOKE_XVFB=1 exec xvfb-run -a --server-args='-screen 0 1024x768x24' "$0" "$BIN"
-	fi
-	echo "test_smoke: no DISPLAY and xvfb-run not found; install xvfb or run on an X display" >&2
-	exit 1
+    if command -v xvfb-run >/dev/null 2>&1; then
+        ARTHA_SMOKE_XVFB=1 exec xvfb-run -a --server-args='-screen 0 1024x768x24' "$0" "$BIN"
+    fi
+    echo "test_smoke: no DISPLAY and xvfb-run not found; install xvfb or run on an X display" >&2
+    exit 1
 fi
 
 SCRATCH=$(mktemp -d /tmp/artha-smoke.XXXXXX)
@@ -55,20 +55,20 @@ trap 'kill "$PID" 2>/dev/null; wait "$PID" 2>/dev/null; rm -rf "$SCRATCH"' EXIT 
 
 i=0
 while [ "$i" -lt 150 ]; do
-	if ! kill -0 "$PID" 2>/dev/null; then
-		echo "test_smoke: artha exited during startup; log follows:" >&2
-		cat "$SCRATCH/artha.log" >&2
-		exit 1
-	fi
-	[ -s "$CONF" ] && break
-	i=$((i + 1))
-	sleep 0.1
+    if ! kill -0 "$PID" 2>/dev/null; then
+        echo "test_smoke: artha exited during startup; log follows:" >&2
+        cat "$SCRATCH/artha.log" >&2
+        exit 1
+    fi
+    [ -s "$CONF" ] && break
+    i=$((i + 1))
+    sleep 0.1
 done
 
 if [ ! -s "$CONF" ]; then
-	echo "test_smoke: artha did not write $CONF within 15s; log follows:" >&2
-	cat "$SCRATCH/artha.log" >&2
-	exit 1
+    echo "test_smoke: artha did not write $CONF within 15s; log follows:" >&2
+    cat "$SCRATCH/artha.log" >&2
+    exit 1
 fi
 
 kill "$PID" 2>/dev/null || true

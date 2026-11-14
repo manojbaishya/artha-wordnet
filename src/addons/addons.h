@@ -13,17 +13,15 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
- 
 /*
  * Modules that are looked up at run time for additional features
  * by Artha (plugins) will have function prototypes here.
  */
 
- 
 #ifndef __ADDONS_H__
 #define __ADDONS_H__
 
@@ -33,16 +31,14 @@ G_BEGIN_DECLS
 
 /* Exposed functions of the 'Suggestions' module */
 
-gboolean 	suggestions_init();
-GSList*		suggestions_get(const gchar* lemma);
-gboolean 	suggestions_uninit();
-
+gboolean suggestions_init();
+GSList* suggestions_get(const gchar* lemma);
+gboolean suggestions_uninit();
 
 /* Exposed functions of 'Notify' module */
-gboolean	mod_notify_init();
-gboolean	mod_notify_uninit();
+gboolean mod_notify_init();
+gboolean mod_notify_uninit();
 
 G_END_DECLS
 
-#endif		/* __ADDONS_H__ */
-
+#endif /* __ADDONS_H__ */

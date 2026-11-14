@@ -154,9 +154,9 @@ def step_stays_running_2s():
     proc = _CTX.get("proc")
     assert proc is not None, "artha was not launched"
     time.sleep(2)
-    assert proc.poll() is None, (
-        f"artha exited early (code {proc.returncode}); see {_CTX['log']}"
-    )
+    assert (
+        proc.poll() is None
+    ), f"artha exited early (code {proc.returncode}); see {_CTX['log']}"
 
 
 def step_writes_preferences():

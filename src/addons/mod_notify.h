@@ -13,16 +13,14 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 /*
- * Dynamic linking of libnotify for passive desktop notification using 
+ * Dynamic linking of libnotify for passive desktop notification using
  * GModule. Prototypes must match with notify.h & notification.h
  */
-
 
 #ifndef __MOD_NOTIFY_H__
 #define __MOD_NOTIFY_H__
@@ -31,24 +29,18 @@
 
 G_BEGIN_DECLS
 
-typedef struct _NotifyNotification        	NotifyNotification;
+typedef struct _NotifyNotification NotifyNotification;
 
-gboolean notify_init(const char *app_name);
+gboolean notify_init(const char* app_name);
 void notify_uninit(void);
 
-NotifyNotification* notify_notification_new(
-	const char *summary, const char *body,
-	const char *icon);
-gboolean notify_notification_update(NotifyNotification *notification, 
-						const char *summary, 
-						const char *body, 
-						const char *icon);
-gboolean notify_notification_show(NotifyNotification *notification, 
-						GError **error);
-gboolean notify_notification_close(NotifyNotification *notification, 
-						GError **error);
+NotifyNotification* notify_notification_new(const char* summary, const char* body,
+                                            const char* icon);
+gboolean notify_notification_update(NotifyNotification* notification, const char* summary,
+                                    const char* body, const char* icon);
+gboolean notify_notification_show(NotifyNotification* notification, GError** error);
+gboolean notify_notification_close(NotifyNotification* notification, GError** error);
 
 G_END_DECLS
 
-#endif		/* __MOD_NOTIFY_H__ */
-
+#endif /* __MOD_NOTIFY_H__ */

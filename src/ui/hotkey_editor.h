@@ -13,15 +13,13 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 
 /*
  * Header that exposes hotkey_editor's functions
  */
-
 
 #ifndef __HOTKEY_EDITOR_H__
 #define __HOTKEY_EDITOR_H__
@@ -34,5 +32,4 @@ GtkWidget* create_hotkey_editor(void);
 
 G_END_DECLS
 
-#endif		/* __HOTKEY_EDITOR_H__ */
-
+#endif /* __HOTKEY_EDITOR_H__ */
