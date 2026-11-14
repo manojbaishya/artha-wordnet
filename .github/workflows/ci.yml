@@ -68,7 +68,7 @@ jobs:
           key: fb-state-${{ hashFiles('deps.json') }}
           restore-keys: fb-state-
 
-      - name: Full flatpak build (as in BUILDING.md)
+      - name: Full flatpak build (as in docs/BUILDING.md)
         run: |
           rm -rf /tmp/fb-out
           flatpak-builder --disable-rofiles-fuse \

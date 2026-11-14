@@ -118,11 +118,11 @@ Hierarchical wiki pages: `Home`, `Building`, `Testing`, `Contributing`, `Project
 
 1. **Conclusion first, proof after** — state the outcome, then minimal supporting evidence (numbers/diffs over prose).
 2. **One decision per turn** — `DO X unless you say no` (plus at most one alternative).
-3. **Never re-explain a closed/frozen decision** — if it's documented here or in `PROJECT_PLAN.md`, treat it as settled.
-4. **Never re-ask what's pre-answered** — check this file, `PROJECT_PLAN.md`, `README.md`, and the wiki first.
+3. **Never re-explain a closed/frozen decision** — if it's documented here or in `docs/planning/PROJECT_PLAN.md`, treat it as settled.
+4. **Never re-ask what's pre-answered** — check this file, `docs/planning/PROJECT_PLAN.md`, `README.md`, and the wiki first.
 5. **Verification before reporting complete** — run the project's lint/typecheck/build checks; fix failures and rerun. Do not silently skip checks.
 6. **No host mutations** — never `~/.config/artha.conf`, never `/usr/local`, never `:0` for GUI tests; use scratch `HOME`/`XDG_*`, Xephyr `:94`; ensure `/usr/bin` on `PATH`.
-7. **Compress context** — put details in files (`SYSTEM_MEMORY.md`, `PROJECT_PLAN.md`); chat carries 10-line distillates.
+7. **Compress context** — put details in files (`SYSTEM_MEMORY.md`, `docs/planning/PROJECT_PLAN.md`); chat carries 10-line distillates.
 
 ## 11. Verification commands (run before declaring done)
 
