@@ -1,0 +1,87 @@
+version: '3'
+
+vars:
+  ROOT: '{{.ROOT_DIR}}'
+  SANDBOX: '{{.ROOT}}/sandbox'
+  STAGE: '{{.ROOT}}/sandbox/stage'
+  PREFIX: '{{.STAGE}}'
+  ARTHA_CACHE: '$HOME/.artha-cache'
+  XMAKE_VERSION: '3.1.2'
+  XMAKE_DIR: '{{.ARTHA_CACHE}}/xmake-{{.XMAKE_VERSION}}'
+  XMAKE_BIN: '{{.XMAKE_DIR}}/bin/xmake'
+
+# Self-contained build tool (maven/uv/pnpm style): xmake is pinned to the
+# versioned reference in deps.json (3.1.2) and kept under
+# ~/.artha-cache/xmake-<version>/ (shared user cache, versioned). Nothing is
+# installed to /usr/local or ~/.config/artha.conf. Populate the cache once
+# with `task bootstrap-xmake`; every build task reuses it via xmake-ensure.
+# The C compiler/linker and system libraries remain platform dependencies;
+# pkg-config locates them via its built-in search path, so no distro-specific
+# PKG_CONFIG_PATH is hardcoded here. The host toolchain (gcc/ld/ar/as) must
+# take precedence over any shadowing toolchain - run builds with
+# PATH=/usr/bin:$PATH on hosts where that shadowing exists.
+
+tasks:
+  default:
+    desc: Configure (release) + build Artha into ./sandbox
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}}'
+
+  build:
+    desc: Configure (release) + build Artha into ./sandbox
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}}'
+
+  install:
+    desc: Build then stage install into ./sandbox/stage (no system changes)
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}}'
+      - '{{.XMAKE_BIN}} install -o "{{.STAGE}}"'
+
+  run:
+    desc: Run the staged Artha binary (requires a prior `task install`)
+    cmds:
+      - '{{.STAGE}}/bin/artha'
+
+  debug:
+    desc: Debug build with verbose wni diagnostics (DEBUG_LEVEL=3)
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}" --debug=verbose'
+      - '{{.XMAKE_BIN}}'
+
+  rebuild:
+    desc: Clean then build (release)
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} -c'
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}}'
+
+  clean:
+    desc: Remove build artifacts under ./sandbox
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} -c'
+
+  bootstrap-xmake:
+    desc: Build and cache pinned xmake {{.XMAKE_VERSION}} into {{.XMAKE_DIR}} (shared user cache, versioned)
+    cmds:
+      - '[ -x "{{.XMAKE_BIN}}" ] && echo "xmake {{.XMAKE_VERSION}} already cached at {{.XMAKE_DIR}}" || { echo "xmake {{.XMAKE_VERSION}} not cached. Build it once:"; echo "  git clone --recursive -b v{{.XMAKE_VERSION}} https://github.com/xmake-io/xmake.git xmake-src"; echo "  cd xmake-src && ./configure --prefix={{.XMAKE_DIR}} && make && make install && cp build/xmake {{.XMAKE_DIR}}/bin/xmake"; }'
+
+  xmake-ensure:
+    desc: Ensure pinned xmake {{.XMAKE_VERSION}} is available (cached or on PATH)
+    cmds:
+      - '[ -x "{{.XMAKE_BIN}}" ] && echo "using cached xmake {{.XMAKE_VERSION}}" || { command -v xmake >/dev/null 2>&1 && echo "using system xmake (run task bootstrap-xmake for a fully self-contained build)" || { echo "ERROR: xmake {{.XMAKE_VERSION}} not found in {{.XMAKE_DIR}} or on PATH" >&2; exit 1; }; }'
