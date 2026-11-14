@@ -168,12 +168,11 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
           TAG=v${VERSION}
-          ARGS="--title \"Artha ${VERSION}\" --notes \"Artha ${VERSION} release\""
+          ARGS=(--title "Artha ${VERSION}" --notes "Artha ${VERSION} release")
           if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
-            ARGS="$ARGS --prerelease"
+            ARGS+=('--prerelease')
           fi
-          # shellcheck disable=SC2086
-          gh release create "$TAG" $ARGS \
+          gh release create "$TAG" "${ARGS[@]}" \
             source-artifacts/artha-${VERSION}.tar.gz \
             source-artifacts/artha-${VERSION}.tar.gz.sha256 \
             flatpak-bundle/org.artha.Artha.flatpak
