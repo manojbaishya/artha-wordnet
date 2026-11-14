@@ -36,21 +36,21 @@ installed to `/usr/local` and nothing is written to `~/.config/artha.conf`.
 
 All build artifacts stay inside the gitignored `sandbox/` directory. On hosts
 where a shadowing toolchain (e.g. linuxbrew) precedes the system one in
-`PATH`, run builds with `PATH=/usr/bin:$PATH`.
+`PATH`, ensure `/usr/bin` precedes it on `PATH` before running builds.
 
 See `BUILDING.md` for full build, install, and flatpak instructions.
 
 ### Quick start
 
 ```sh
-# configure + build into ./sandbox (use PATH=/usr/bin:$PATH if needed)
-PATH=/usr/bin:$PATH task build
+# configure + build into ./sandbox (ensure /usr/bin on PATH if needed)
+task build
 
 # stage into ./sandbox/stage (no system changes, never /usr/local)
-PATH=/usr/bin:$PATH task install
+task install
 
 # run the staged binary on a scratch HOME / Xephyr :94
-PATH=/usr/bin:$PATH task run
+task run
 ```
 
 ## Dependencies
@@ -87,10 +87,10 @@ runner):
 
 ```sh
 # configure, build, then run unit + integration tests
-PATH=/usr/bin:$PATH task test
+task test
 
 # run behavioural (app + UI) Gherkin scenarios (needs Xephyr :94; :0 is read-only)
-PATH=/usr/bin:$PATH task test-behavioral
+task test-behavioral
 ```
 
 GUI interaction/tests run on nested Xephyr `:94` only; `:0` is read-only;

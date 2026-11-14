@@ -53,7 +53,7 @@ Test pyramid for the WNI layer and app behaviour.
 |-------|------|-------|--------|-------|
 | Unit + integration + behavioural test harness | `user-story` | `test` | DONE (#6, closed by #12) | GLib GTest unit (12), integration vs real WordNet DB (4), Gherkin+Python behavioural (2) |
 | xmake targets `artha-unit-test` / `artha-integration-test` | `sub-task` | `build` | DONE (in #12) | linked into `task test` |
-| Taskfile `task test` / `task test-behavioral` | `sub-task` | `build` | DONE (in #12) | run with `PATH=/usr/bin:$PATH` |
+| Taskfile `task test` / `task test-behavioral` | `sub-task` | `build` | DONE (in #12) | run with `/usr/bin` on `PATH` |
 | `__pycache__/` gitignore | `sub-task` | `build` | DONE (in #12) | behavioural runner artifacts |
 
 ### Feature: Preferences & Help Windows
@@ -144,4 +144,4 @@ Uses flite speech engine + Moby phonetics (from TODO).
 - Squash-merge feature branches; merge commits for PRs into `main`.
 - PR title: `<TYPE>: <SCOPE> - <TITLE>`, `TYPE ∈ {epic, feature, user-story, bug, task, sub-task}`.
 - PR body: `closes #<issue>` / `fixes #<issue>` to auto-close linked issue.
-- `:0` is read-only; GUI tests run on nested Xephyr `:94` only; scratch `HOME`/`XDG_*`; never `~/.config/artha.conf`; host builds use `PATH=/usr/bin:$PATH`; never `/usr/local` or artha-origin flatpak.
+- `:0` is read-only; GUI tests run on nested Xephyr `:94` only; scratch `HOME`/`XDG_*`; never `~/.config/artha.conf`; ensure `/usr/bin` on `PATH` for host builds; never `/usr/local` or artha-origin flatpak.
