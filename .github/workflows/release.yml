@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.1.0-rc1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  source-artifacts:
+    name: Build source tarball + sha256
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config python3 curl ca-certificates \
+            libgtk-4-dev libglib2.0-dev libx11-dev \
+            wordnet wordnet-dev \
+            xvfb xauth
+
+      - name: Install pinned xmake from deps.json
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, urllib.request
+          tool = json.load(open("deps.json"))["build_tool"]["xmake"]
+          body = urllib.request.urlopen(tool["url"]).read()
+          digest = hashlib.sha256(body).hexdigest()
+          if digest != tool["sha256"]:
+              raise SystemExit(f"xmake sha256 mismatch: {digest} != {tool['sha256']}")
+          open("/tmp/xmake", "wb").write(body)
+          PY
+          sudo install -m 0755 /tmp/xmake /usr/local/bin/xmake
+          mkdir -p "$HOME/.artha-cache/xmake-3.1.2/bin"
+          install -m 0755 /tmp/xmake "$HOME/.artha-cache/xmake-3.1.2/bin/xmake"
+          xmake --version
+
+      - name: Install go-task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+
+      - name: Build release + stage install
+        run: |
+          PATH=/usr/bin:$PATH task install
+
+      - name: Run unit + integration tests
+        run: |
+          PATH=/usr/bin:$PATH xmake run artha-unit-test
+          PATH=/usr/bin:$PATH xmake run artha-integration-test
+
+      - name: Determine version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          if [ -z "$VERSION" ]; then VERSION=${{ github.event.inputs.version }}; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Produce source tarball + sha256
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          tar -czf "artha-${VERSION}.tar.gz" -C sandbox/stage .
+          sha256sum "artha-${VERSION}.tar.gz" > "artha-${VERSION}.tar.gz.sha256"
+          ls -la artha-*.tar.gz artha-*.tar.gz.sha256
+
+      - name: Upload source artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-artifacts-${{ steps.version.outputs.version }}
+          path: |
+            artha-*.tar.gz
+            artha-*.tar.gz.sha256
+
+  flatpak-bundle:
+    name: Build Flatpak bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flatpak
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install -y --user flathub org.gnome.Sdk//51 org.gnome.Platform//51
+
+      - name: Cache flatpak-builder state
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/fb-state
+          key: fb-state-${{ hashFiles('deps.json') }}
+          restore-keys: fb-state-
+
+      - name: Determine version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          if [ -z "$VERSION" ]; then VERSION=${{ github.event.inputs.version }}; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build Flatpak bundle
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          rm -rf /tmp/fb-out /tmp/fb-repo
+          flatpak-builder --disable-rofiles-fuse \
+            --repo=/tmp/fb-repo --state-dir="$HOME/.cache/fb-state" --force-clean \
+            /tmp/fb-out flatpak/org.artha.Artha.json
+          flatpak build-bundle /tmp/fb-repo org.artha.Artha.flatpak org.artha.Artha master
+          ls -la org.artha.Artha.flatpak
+
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-bundle-${{ steps.version.outputs.version }}
+          path: org.artha.Artha.flatpak
+
+  release:
+    name: Create GitHub Release + upload assets
+    needs: [source-artifacts, flatpak-bundle]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          if [ -z "$VERSION" ]; then VERSION=${{ github.event.inputs.version }}; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          case "$VERSION" in
+            *-rc*|*-beta*|*-alpha*) echo "prerelease=true" ;;
+            *) echo "prerelease=false" ;;
+          esac >> "$GITHUB_OUTPUT"
+
+      - name: Download source artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: source-artifacts-${{ steps.version.outputs.version }}
+          path: source-artifacts
+
+      - name: Download Flatpak bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: flatpak-bundle-${{ steps.version.outputs.version }}
+          path: flatpak-bundle
+
+      - name: List downloaded assets
+        run: |
+          ls -la source-artifacts/ flatpak-bundle/
+
+      - name: Create GitHub Release + upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          TAG=v${VERSION}
+          ARGS=(--title "Artha ${VERSION}" --notes "Artha ${VERSION} release")
+          if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
+            ARGS+=('--prerelease')
+          fi
+          gh release create "$TAG" "${ARGS[@]}" \
+            source-artifacts/artha-${VERSION}.tar.gz \
+            source-artifacts/artha-${VERSION}.tar.gz.sha256 \
+            flatpak-bundle/org.artha.Artha.flatpak
