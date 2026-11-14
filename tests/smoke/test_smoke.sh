@@ -13,7 +13,7 @@
 # help when the caller exports XDG_CONFIG_HOME (g_get_user_config_dir()
 # prefers it). All four are pinned to the scratch dir.
 #
-# Usage: tests/test_smoke.sh [path-to-artha]
+# Usage: tests/smoke/test_smoke.sh [path-to-artha]
 set -eu
 
 if [ $# -ge 1 ]; then

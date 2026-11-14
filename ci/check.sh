@@ -52,6 +52,6 @@ echo "== flatpak manifest drift check (deps.json -> flatpak/org.artha.Artha.json
 python3 "$ROOT/tools/gen_flatpak_manifest.py" --check
 
 echo "== smoke test"
-"$ROOT/tests/test_smoke.sh" "$BIN"
+"$ROOT/tests/smoke/test_smoke.sh" "$BIN"
 
 echo "ci/check: OK"
