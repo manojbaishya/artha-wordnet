@@ -14,14 +14,14 @@ Artha is built exclusively with **xmake** (pinned to **3.1.2** in `deps.json`). 
 
 All build artifacts stay inside the gitignored `sandbox/` directory.
 
-**Quick start** (use `PATH=/usr/bin:$PATH` on hosts where linuxbrew shadows the system toolchain):
+**Quick start** (ensure `/usr/bin` precedes the host toolchain on `PATH`):
 
 ```sh
-PATH=/usr/bin:$PATH task build        # configure + build into ./sandbox
-PATH=/usr/bin:$PATH task install      # stage into ./sandbox/stage (no system changes)
-PATH=/usr/bin:$PATH task run          # run staged binary on scratch HOME / Xephyr :94
-PATH=/usr/bin:$PATH task test         # unit + integration tests
-PATH=/usr/bin:$PATH task test-behavioral  # Gherkin + Python behavioural tests (needs Xephyr :94)
+task build        # configure + build into ./sandbox
+task install      # stage into ./sandbox/stage (no system changes)
+task run          # run staged binary on scratch HOME / Xephyr :94
+task test         # unit + integration tests
+task test-behavioral  # Gherkin + Python behavioural tests (needs Xephyr :94)
 ```
 
 `task install` stages into `sandbox/stage` and lays out `bin/artha`, `share/applications/org.artha.Artha.desktop`, `share/artha/gui.glade`, `share/man/man1/artha.1`, `share/pixmaps/artha.png`, `share/icons/hicolor/128x128/apps/org.artha.Artha.png`, `share/metainfo/org.artha.Artha.metainfo.xml`.
@@ -121,14 +121,14 @@ Hierarchical wiki pages: `Home`, `Building`, `Testing`, `Contributing`, `Project
 3. **Never re-explain a closed/frozen decision** — if it's documented here or in `PROJECT_PLAN.md`, treat it as settled.
 4. **Never re-ask what's pre-answered** — check this file, `PROJECT_PLAN.md`, `README.md`, and the wiki first.
 5. **Verification before reporting complete** — run the project's lint/typecheck/build checks; fix failures and rerun. Do not silently skip checks.
-6. **No host mutations** — never `~/.config/artha.conf`, never `/usr/local`, never `:0` for GUI tests; use scratch `HOME`/`XDG_*`, Xephyr `:94`, `PATH=/usr/bin:$PATH`.
+6. **No host mutations** — never `~/.config/artha.conf`, never `/usr/local`, never `:0` for GUI tests; use scratch `HOME`/`XDG_*`, Xephyr `:94`; ensure `/usr/bin` on `PATH`.
 7. **Compress context** — put details in files (`SYSTEM_MEMORY.md`, `PROJECT_PLAN.md`); chat carries 10-line distillates.
 
 ## 11. Verification commands (run before declaring done)
 
 ```sh
-PATH=/usr/bin:$PATH task test
-PATH=/usr/bin:$PATH task test-behavioral   # needs Xephyr :94
+task test
+task test-behavioral   # needs Xephyr :94
 python3 tools/gen_flatpak_manifest.py --check
 ```
 

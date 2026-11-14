@@ -42,7 +42,7 @@ The generated manifest is committed; `--check` is the drift guard.
   `PATH` and gcc's `collect2` then resolves `ld` from linuxbrew, which
   cannot see `/usr/lib/x86_64-linux-gnu` and mis-links system libraries
   (undefined `pcre_*`, `Xcursor*`, `__isoc23_*@GLIBC_2.38`, ...).
-  Invoke xmake as `PATH=/usr/bin:$PATH xmake ...`.
+  Invoke xmake as `xmake ...` with `/usr/bin` on `PATH` first.
   Note: passing `--ld=/usr/bin/ld --as=/usr/bin/as --ar=/usr/bin/ar` to
   `xmake config` does NOT help — the configure-time probes then fail and
   gcc still prefers linuxbrew's `ld`. `PATH` order is the only fix.

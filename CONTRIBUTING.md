@@ -61,7 +61,7 @@ So a PR body like `closes #10` both links the PR to issue #10 *and* closes #10 o
 
 - xmake is pinned to the versioned reference in `deps.json` (3.1.2) and reused from a shared versioned user cache at `~/.artha-cache/xmake-3.1.2/`. Populate it once with `task bootstrap-xmake`; every build task reuses it via `xmake-ensure`. Nothing is installed to `/usr/local` or `~/.config/artha.conf`.
 - The C compiler/linker and system libraries (gtk4, glib, wordnet, X11) remain platform dependencies located by pkg-config's built-in search path — no distro-specific `PKG_CONFIG_PATH` is hardcoded.
-- On hosts where linuxbrew shadows the system toolchain, run builds with `PATH=/usr/bin:$PATH task <recipe>` (the host toolchain must win).
+- On hosts where linuxbrew shadows the system toolchain, ensure `/usr/bin` precedes it on `PATH`, then run `task <recipe>` (the host toolchain must win).
 
 Recipes: `build`, `install`, `run`, `debug`, `rebuild`, `clean`, `default`. Artifacts stay under the gitignored `sandbox/`; `task install` stages into `sandbox/stage` (no system changes).
 
