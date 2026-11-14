@@ -83,6 +83,36 @@ xmake f --debug=verbose && xmake   # wni debug output (DEBUG_LEVEL=3)
 `src/wni.h` / `src/wni.c`. It affects the `wni` diagnostics only; it does
 not change optimization.
 
+## Taskfile recipes
+
+`task` is the single entry point for build/install/run/test/lint. The full recipe list:
+
+| Recipe | Description |
+|--------|-------------|
+| `task build` | Configure (release) + build into `./sandbox` |
+| `task build-strict` | Build with `--strict=yes` (opt-in stricter warnings) |
+| `task test` | Configure, build, run unit + integration tests |
+| `task test-behavioral` | Gherkin behavioural tests (needs Xephyr `:94`) |
+| `task test-asan` | clang ASan+UBSan build + unit + integration tests |
+| `task valgrind` | Valgrind run of unit + integration + smoke (manual, not CI-gated) |
+| `task coverage` | gcc gcov coverage build + tests + per-file `.gcov` reports |
+| `task format` | Apply clang-format to C/H sources |
+| `task format-check` | Check C/H sources conform to clang-format |
+| `task lint` | clang-tidy over `src/` (excl. `platform/windows/`, `libnotify.c`) |
+| `task lint-shell` | shellcheck on `ci/check.sh`, `tests/smoke/test_smoke.sh` |
+| `task lint-python` | ruff on behavioral + manifest Python files |
+| `task lint-shell-python` | `lint-shell` + `lint-python` together |
+| `task check` | Aggregator: `build` + `format-check` + `lint` + `lint-shell` + `lint-python` + `test` |
+| `task install` | Build + stage install into `./sandbox/stage` (no system changes) |
+| `task run` | Run staged binary from `sandbox/stage/bin/artha` |
+| `task debug` | Debug build with verbose WNI diagnostics |
+| `task rebuild` | Clean then build (release) |
+| `task clean` | Remove build artifacts under `./sandbox` |
+| `task bootstrap-xmake` | Build and cache pinned xmake into `~/.artha-cache/` |
+| `task xmake-ensure` | Ensure pinned xmake is available |
+
+`task check` covers the full G1 verification gate minus `task test-behavioral` (needs Xephyr `:94`) and `./ci/check.sh` (needs full install + smoke).
+
 Artifacts (objects and the binary) stay inside the gitignored `sandbox/`
 directory of the project root:
 

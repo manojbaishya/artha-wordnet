@@ -57,13 +57,40 @@ So a PR body like `closes #10` both links the PR to issue #10 *and* closes #10 o
 
 ## Build (Taskfile)
 
-`Taskfile.yml` is the single entry point for build/install/run. It is self-contained in the maven/uv/pnpm sense:
+`Taskfile.yml` is the single entry point for build/install/run/test/lint. It is self-contained in the maven/uv/pnpm sense:
 
 - xmake is pinned to the versioned reference in `deps.json` (3.1.2) and reused from a shared versioned user cache at `~/.artha-cache/xmake-3.1.2/`. Populate it once with `task bootstrap-xmake`; every build task reuses it via `xmake-ensure`. Nothing is installed to `/usr/local` or `~/.config/artha.conf`.
 - The C compiler/linker and system libraries (gtk4, glib, wordnet, X11) remain platform dependencies located by pkg-config's built-in search path — no distro-specific `PKG_CONFIG_PATH` is hardcoded.
 - On hosts where linuxbrew shadows the system toolchain, ensure `/usr/bin` precedes it on `PATH`, then run `task <recipe>` (the host toolchain must win).
+- `task check` is the aggregator: `build` + `format-check` + `lint` + `lint-shell` + `lint-python` + `test`. It covers the full G1 verification gate minus `task test-behavioral` (needs Xephyr `:94`) and `./ci/check.sh` (needs full install + smoke).
 
-Recipes: `build`, `install`, `run`, `debug`, `rebuild`, `clean`, `default`. Artifacts stay under the gitignored `sandbox/`; `task install` stages into `sandbox/stage` (no system changes).
+Recipes:
+
+| Recipe | Description |
+|--------|-------------|
+| `task build` | Configure (release) + build into `./sandbox` |
+| `task build-strict` | Build with `--strict=yes` (opt-in stricter warnings) |
+| `task test` | Configure, build, run unit + integration tests |
+| `task test-behavioral` | Gherkin behavioural tests (needs Xephyr `:94`) |
+| `task test-asan` | clang ASan+UBSan build + unit + integration tests |
+| `task valgrind` | Valgrind run of unit + integration + smoke (manual, not CI-gated) |
+| `task coverage` | gcc gcov coverage build + tests + per-file `.gcov` reports |
+| `task format` | Apply clang-format to C/H sources |
+| `task format-check` | Check C/H sources conform to clang-format |
+| `task lint` | clang-tidy over `src/` (excl. `platform/windows/`, `libnotify.c`) |
+| `task lint-shell` | shellcheck on `ci/check.sh`, `tests/smoke/test_smoke.sh` |
+| `task lint-python` | ruff on behavioral + manifest Python files |
+| `task lint-shell-python` | `lint-shell` + `lint-python` together |
+| `task check` | Aggregator: `build` + `format-check` + `lint` + `lint-shell` + `lint-python` + `test` |
+| `task install` | Build + stage install into `./sandbox/stage` (no system changes) |
+| `task run` | Run staged binary from `sandbox/stage/bin/artha` |
+| `task debug` | Debug build with verbose WNI diagnostics |
+| `task rebuild` | Clean then build (release) |
+| `task clean` | Remove build artifacts under `./sandbox` |
+| `task bootstrap-xmake` | Build and cache pinned xmake into `~/.artha-cache/` |
+| `task xmake-ensure` | Ensure pinned xmake is available |
+
+Artifacts stay under the gitignored `sandbox/`; `task install` stages into `sandbox/stage` (no system changes).
 
 ## Submitting a PR
 
