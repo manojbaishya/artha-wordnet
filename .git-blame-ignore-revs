@@ -1,0 +1,8 @@
+# List of commit hashes to ignore when running `git blame`.
+#
+# Populate this with the squash-merge commit hash of the clang-format
+# reformatting PR once it lands on main. The hash does not exist before the
+# merge, so this file starts empty.
+#
+# Example format (one per line, comment lines start with #):
+#   a1b2c3d  clang-format: reformat C sources

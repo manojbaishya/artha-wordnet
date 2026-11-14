@@ -102,3 +102,13 @@ tasks:
     desc: Ensure pinned xmake {{.XMAKE_VERSION}} is available (cached or on PATH)
     cmds:
       - '[ -x "{{.XMAKE_BIN}}" ] && echo "using cached xmake {{.XMAKE_VERSION}}" || { command -v xmake >/dev/null 2>&1 && echo "using system xmake (run task bootstrap-xmake for a fully self-contained build)" || { echo "ERROR: xmake {{.XMAKE_VERSION}} not found in {{.XMAKE_DIR}} or on PATH" >&2; exit 1; }; }'
+
+  format:
+    desc: Apply clang-format to C/H sources
+    cmds:
+      - 'clang-format -i src/**/*.c src/**/*.h tests/**/*.c'
+
+  format-check:
+    desc: Check C/H sources conform to clang-format (exits non-zero on any diff)
+    cmds:
+      - 'clang-format --dry-run --Werror src/**/*.c src/**/*.h tests/**/*.c'
