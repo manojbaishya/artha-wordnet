@@ -107,6 +107,8 @@ Hierarchical project documentation lives on the
 * **Testing** — test pyramid, unit/integration/behavioural layers
 * **Contributing** — issue types, board status, PR naming, merge policy
 * **Project Plan** — requirement → issue hierarchy mapping
+* **Deployment** — deployment targets (Linux/Windows/macOS), versioned GitHub Release assets, no-system-changes install model
+* **Release Strategy** — release-train branching model: stable `main`, `release/v-*` staging, feature branches, `pre-release/...-FeatureSet{i}` integration
 
 The root wiki page (`Home`) mirrors `README.md` and is updated automatically
 whenever `README.md` is merged to `main` (see
