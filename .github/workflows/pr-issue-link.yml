@@ -1,0 +1,85 @@
+name: Link PRs to issues via JOIN key and close on merge
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  link-and-close:
+    name: Link PR to issues and close them on merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse JOIN key from PR
+        id: parse
+        uses: actions/github-script@v7
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+          ACTION: ${{ github.event.action }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        with:
+          script: |
+            // JOIN key: an issue reference in the PR title/body, e.g.
+            //   Closes #12   Fixes #12   Join: #12
+            const text = (process.env.PR_TITLE || "") + "\n" + (process.env.PR_BODY || "");
+            const joinRe = /(?:closes|fixes|join)\s*:?\s*#(\d+)/gi;
+            const issues = new Set();
+            let m;
+            while ((m = joinRe.exec(text)) !== null) {
+              issues.add(parseInt(m[1], 10));
+            }
+            const merged = process.env.ACTION === "closed" && process.env.MERGED === "true";
+            core.setOutput("issues", JSON.stringify([...issues]));
+            core.setOutput("merged", String(merged));
+            core.setOutput("action", process.env.ACTION);
+            core.setOutput("pr_number", process.env.PR_NUMBER);
+            core.setOutput("pr_url", process.env.PR_URL);
+
+      - name: Link PR to issues (on open / reopen / sync)
+        if: steps.parse.outputs.action != 'closed' && steps.parse.outputs.issues != '[]'
+        uses: actions/github-script@v7
+        env:
+          ISSUES: ${{ steps.parse.outputs.issues }}
+          PR_NUMBER: ${{ steps.parse.outputs.pr_number }}
+          PR_URL: ${{ steps.parse.outputs.pr_url }}
+        with:
+          script: |
+            const { repo } = context;
+            const issues = JSON.parse(process.env.ISSUES);
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const prUrl = process.env.PR_URL;
+            for (const issueNumber of issues) {
+              github.rest.issues.createComment({
+                ...repo,
+                issue_number: issueNumber,
+                body: "🔗 Linked by PR #" + prNumber + " (" + prUrl + ")"
+              });
+            }
+
+      - name: Close linked issues when the PR is merged
+        if: steps.parse.outputs.merged == 'true' && steps.parse.outputs.issues != '[]'
+        uses: actions/github-script@v7
+        env:
+          ISSUES: ${{ steps.parse.outputs.issues }}
+        with:
+          script: |
+            const { repo } = context;
+            const issues = JSON.parse(process.env.ISSUES);
+            for (const issueNumber of issues) {
+              try {
+                github.rest.issues.update({
+                  ...repo,
+                  issue_number: issueNumber,
+                  state: "closed"
+                });
+              } catch (e) {
+                core.warning("Could not close issue #" + issueNumber + ": " + e.message);
+              }
+            }
