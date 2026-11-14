@@ -114,7 +114,7 @@ static gboolean try_sys_lang(gchar* copy_dict_tag, guint8 max_length) {
     return FALSE;
 }
 
-gboolean suggestions_init() {
+gboolean suggestions_init(void) {
     gchar dict_tag[DICT_TAG_MAX_LENGTH] = "";
 
     if (g_module_supported() && (mod_enchant = g_module_open(ENCHANT_FILE, G_MODULE_BIND_LAZY))) {
@@ -200,7 +200,7 @@ gboolean suggestions_init() {
     return FALSE;
 }
 
-gboolean suggestions_uninit() {
+gboolean suggestions_uninit(void) {
     gboolean free_success = FALSE;
 
     if (enchant_dict) {
