@@ -143,3 +143,12 @@ tasks:
     desc: Check C/H sources conform to clang-format (exits non-zero on any diff)
     cmds:
       - 'clang-format --dry-run --Werror src/**/*.c src/**/*.h tests/**/*.c'
+
+  lint:
+    desc: Run clang-tidy over src/ (excl. platform/windows) using a compile database in sandbox (gitignored)
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}} project -P {{.ROOT}} -k compile_commands {{.SANDBOX}}'
+      - 'clang-tidy -p {{.SANDBOX}} $(find {{.ROOT}}/src -name "*.c" ! -path "{{.ROOT}}/src/platform/windows/*" ! -path "{{.ROOT}}/src/platform/libnotify.c")'
