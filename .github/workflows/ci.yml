@@ -71,6 +71,8 @@ jobs:
           open("/tmp/xmake", "wb").write(body)
           PY
           sudo install -m 0755 /tmp/xmake /usr/local/bin/xmake
+          mkdir -p "$HOME/.artha-cache/xmake-3.1.2/bin"
+          install -m 0755 /tmp/xmake "$HOME/.artha-cache/xmake-3.1.2/bin/xmake"
 
       - name: Install go-task
         run: |
