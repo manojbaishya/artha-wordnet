@@ -123,6 +123,7 @@ Hierarchical wiki pages: `Home`, `Building`, `Testing`, `Contributing`, `Project
 5. **Verification before reporting complete** — run the project's lint/typecheck/build checks; fix failures and rerun. Do not silently skip checks.
 6. **No host mutations** — never `~/.config/artha.conf`, never `/usr/local`, never `:0` for GUI tests; use scratch `HOME`/`XDG_*`, Xephyr `:94`; ensure `/usr/bin` on `PATH`.
 7. **Compress context** — put details in files (`SYSTEM_MEMORY.md`, `docs/planning/PROJECT_PLAN.md`); chat carries 10-line distillates.
+8. **Log decisions with COST/EFFORT/RISK/PAYOFF** — whenever a technical or tooling decision is made (e.g. compiler choice, CI lane, dependency pin), record it using a COST/EFFORT/RISK/PAYOFF matrix in simple, accurate technical and economic terms. For each option: state the COST (money, time, compute), EFFORT (person-hours, complexity), RISK (failure chance, blast radius), and PAYOFF (benefit, users affected). Keep it under ~200 words, in plain language that is technically correct but easy to understand. Do not switch defaults without this matrix.
 
 ## 11. Verification commands (run before declaring done)
 
