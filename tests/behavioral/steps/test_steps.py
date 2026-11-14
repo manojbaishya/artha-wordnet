@@ -13,7 +13,6 @@ reused with minimal adaptation.
 from __future__ import annotations
 
 import os
-import signal
 import subprocess
 import tempfile
 import time
@@ -105,13 +104,14 @@ def step_launch_artha():
     _CTX["display"] = display
     log = scratch / "artha.log"
     _CTX["log"] = log
-    proc = subprocess.Popen(
-        [binary],
-        env=env,
-        stdout=open(log, "wb"),
-        stderr=subprocess.STDOUT,
-        start_new_session=True,
-    )
+    with open(log, "wb") as log_fh:
+        proc = subprocess.Popen(
+            [binary],
+            env=env,
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
     _CTX["proc"] = proc
 
 
@@ -123,13 +123,14 @@ def step_launch_artha_no_display():
     env.pop("DISPLAY", None)
     log = scratch / "artha.log"
     _CTX["log"] = log
-    proc = subprocess.Popen(
-        [binary],
-        env=env,
-        stdout=open(log, "wb"),
-        stderr=subprocess.STDOUT,
-        start_new_session=True,
-    )
+    with open(log, "wb") as log_fh:
+        proc = subprocess.Popen(
+            [binary],
+            env=env,
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
     _CTX["proc"] = proc
 
 
