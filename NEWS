@@ -33,6 +33,11 @@ Unreleased (Nov 12, 2026)
 	  the libwordnet static library is still the 3.0 source, as upstream
 	  ships no 3.1 library). flatpak ships the 3.1 dict set as an overlay
 	  with frames.vrb/lexnames/dbfiles dropped (absent from 3.1).
+	- gtk_dialog_run is gone (nested main loops removed): all message
+	  dialogs present non-modally and destroy on "response". On GTK >= 4.10
+	  they are GtkAlertDialog (message = former title, detail = former
+	  body); the file chooser is GtkFileDialog (save) with the same copy
+	  and reporting flow.
 	- Hotkey peek: the global hotkey now listens on a dedicated X11
 	  connection with a blocking XNextEvent pump thread, dispatching to GTK
 	  via g_idle_add with an async PRIMARY selection read (gdk_clipboard_
