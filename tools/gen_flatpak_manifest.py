@@ -14,34 +14,32 @@ The generated manifest is committed to the repo. --check is the drift
 guard (e.g. for CI): it fails if the committed manifest does not match a
 fresh generation from deps.json.
 
-Module choices (rationale, unchanged from the hand-written .yml):
-  The "buildsystem": "autotools" values name the upstream tarballs' own
-  build systems (dbus-glib and GTK+ 2 are autotools projects); this
-  project itself contains no autotools files or references.
+Module choices (rationale):
+  The flatpak base is the Flatpak TARGET system (org.gnome.Platform 51;
+  GNOME 51 ships GTK 4.24.1 / GLib 2.90.1 / libX11 1.8.14), i.e. the app
+  is built and run against exactly the toolkit versions users get. Do not
+  substitute older/newer GTK here.
   xmake    - the build system; built here for /app and removed in the
              final cleanup (the app itself does not depend on xmake).
              The final cleanup also strips the from-source modules'
-             development artifacts (headers, static libs, pkg-config
-             files, libtool archives, debug symbols, docs, gir): the
-             runtime needs none of them and they are over half the
-             unstripped /app size.
-  wordnet  - upstream Princeton WordNet 3.0; only lib + headers + dict
-             data are installed. The upstream build requires Tcl/Tk
-             (for the wishwn GUI) which we deliberately do not build, so
-             the library and data are installed directly with make-free
-             commands (buildsystem: simple). DEFAULTPATH is pinned to
-             /app/dict, the upstream $prefix/dict default.
-  dbus-glib- POSIX session-bus helper for artha's single-instance logic.
-             Built with -std=gnu11: this pre-C23 codebase uses `bool` as an
-             identifier, which became a keyword in C23 (the SDK's gcc
-             defaults to gnu23). Same treatment for GTK+ 2 and WordNet.
-  gtk2     - GTK+ 2.24.33 (>= 2.24 as required); the SDK ships
-             glib/pango/cairo/atk/gdk-pixbuf 2 but not GTK 2.
+             development artifacts (static libs, pkg-config files, debug
+             symbols): the runtime needs none of them.
+  wordnet  - upstream Princeton WordNet 3.0; libwordnet + wn.h only
+             (statically linked into the app). Built with -std=gnu11:
+             pre-C23 codebase (the SDK's gcc defaults to gnu23).
+             DEFAULTPATH is pinned to /app/dict.
+  wordnet-dict - WordNet 3.1 dictionary data (utf8 dict files) overlaid
+             into /app/dict (simple buildsystem, plain copy). WordNet
+             3.1 exists only as a dict data set; there is no 3.1 source
+             release, so the 3.0 source provides the library and the 3.1
+             data files provide the dictionary. The 3.0 dict is NOT
+             installed (superseded); the 3.1 set drops frames.vrb and
+             lexnames (absent from 3.1).
   artha    - the application, built with the xmake.lua from this tree.
 
 Enchant (libenchant-2) is intentionally NOT included: artha loads it at
 runtime via dlopen() and silently disables spelling suggestions when it
-is absent. The freedesktop SDK does not ship enchant-2.
+is absent.
 """
 
 import json
@@ -93,47 +91,23 @@ def module_wordnet(pin):
             "cd lib && ar rcs libwordnet.a *.o",
             "install -Dm644 lib/libwordnet.a /app/lib/libwordnet.a",
             "install -Dm644 include/wn.h /app/include/wn.h",
+        ],
+    }
+
+
+def module_wordnet_dict(pin):
+    return {
+        "name": "wordnet-dict",
+        "buildsystem": "simple",
+        "sources": [
+            {"type": "archive", "url": pin["url"], "sha256": pin["sha256"]},
+        ],
+        "build-commands": [
             "install -d /app/dict",
-            (
-                "install -m 644 dict/adj.exc dict/adv.exc dict/cntlist dict/cntlist.rev "
-                "dict/data.adj dict/data.adv dict/data.noun dict/data.verb "
-                "dict/frames.vrb dict/index.adj dict/index.adv dict/index.noun "
-                "dict/index.sense dict/index.verb dict/lexnames dict/noun.exc "
-                "dict/sentidx.vrb dict/sents.vrb dict/verb.Framestext dict/verb.exc "
-                "dict/log.grind.3.0 /app/dict/"
-            ),
+            # The archive extracts flat into the build root; dbfiles/ is
+            # reindex metadata (~17MB), not referenced at runtime.
+            "find . -mindepth 1 -maxdepth 1 ! -name dbfiles -exec cp -a {} /app/dict/ \\;",
         ],
-    }
-
-
-def module_dbus_glib(pin):
-    return {
-        "name": "dbus-glib",
-        "buildsystem": "autotools",
-        "build-options": {
-            # pre-C23 codebase: `bool` as an identifier (keyword in C23)
-            "cflags": "-O2 -std=gnu11",
-        },
-        "sources": [
-            {"type": "archive", "url": pin["url"], "sha256": pin["sha256"]},
-        ],
-        "config-opts": ["--prefix=/app"],
-    }
-
-
-def module_gtk2(pin):
-    return {
-        "name": "gtk2",
-        "buildsystem": "autotools",
-        "build-options": {
-            # GTK+ 2 predates gcc 14, which turned IncompatiblePointerTypes
-            # into an error; keep the historic diagnostic level (flag-only fix).
-            "cflags": "-O2 -std=gnu11 -Wno-incompatible-pointer-types -Wno-int-conversion -Wno-implicit-int",
-        },
-        "sources": [
-            {"type": "archive", "url": pin["url"], "sha256": pin["sha256"]},
-        ],
-        "config-opts": ["--prefix=/app", "--disable-gtk-doc", "--disable-gtktest"],
     }
 
 
@@ -147,13 +121,10 @@ def module_artha():
         "build-commands": [
             "CPATH=/app/include LIBRARY_PATH=/app/lib xmake f --prefix=/app -m release",
             "CPATH=/app/include LIBRARY_PATH=/app/lib xmake",
+            # xmake installs the app-id-named hicolor icon and desktop
+            # file (data/org.artha.Artha.desktop) itself; flatpak exports
+            # them as-is.
             "CPATH=/app/include LIBRARY_PATH=/app/lib xmake install -o /app",
-            # Flatpak exports desktop files/icons named after the app-id.
-            # Icons must live in the hicolor theme to be exported (share/pixmaps
-            # is not picked up by this flatpak-builder); artha.png is 128x128.
-            "install -Dm644 /app/share/applications/artha.desktop /app/share/applications/org.artha.Artha.desktop",
-            "sed -i 's/^Icon=artha$/Icon=org.artha.Artha/' /app/share/applications/org.artha.Artha.desktop",
-            "install -Dm644 /app/share/pixmaps/artha.png /app/share/icons/hicolor/128x128/apps/org.artha.Artha.png",
         ],
     }
 
@@ -161,8 +132,7 @@ def module_artha():
 def build_manifest(deps):
     recipes = {
         "wordnet": module_wordnet,
-        "dbus-glib": module_dbus_glib,
-        "gtk2": module_gtk2,
+        "wordnet-dict": module_wordnet_dict,
     }
 
     modules = [module_xmake(deps["build_tool"]["xmake"])]
@@ -186,25 +156,15 @@ def build_manifest(deps):
         "finish-args": FINISH_ARGS,
         "cleanup": [
             "/bin/xmake",
-            # development artifacts of the from-source modules; useless
-            # (and large) at runtime. Artha is a C application: no headers,
-            # static libs, pkgconfig files, libtool archives, debug
-            # symbols, docs or GObject-introspection data are needed.
+            # development artifacts of the from-source modules (libwordnet.a,
+            # wn.h); useless (and large) at runtime. Artha is a C application:
+            # no headers, static libs or pkg-config files needed.
+            # NB: no "/lib/debug" entry — nothing in this build produces
+            # debug files, and flathub rejects a toplevel /lib/debug cleanup.
             "/include",
             "/lib/*.a",
             "/lib/*.la",
             "/lib/pkgconfig",
-            "/lib/debug",
-            "/lib/girepository-1.0",
-            "/share/aclocal",
-            "/share/gir-1.0",
-            "/share/gtk-doc",
-            # gtk2 module's development/demo tools
-            "/bin/dbus-binding-tool",
-            "/bin/gtk-builder-convert",
-            "/bin/gtk-demo",
-            "/bin/gtk-query-immodules-2.0",
-            "/bin/gtk-update-icon-cache",
         ],
         "modules": modules,
     }

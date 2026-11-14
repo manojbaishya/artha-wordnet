@@ -1,8 +1,8 @@
 {
     "app-id": "org.artha.Artha",
-    "runtime": "org.freedesktop.Platform",
-    "runtime-version": "25.08",
-    "sdk": "org.freedesktop.Sdk",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "51",
+    "sdk": "org.gnome.Sdk",
     "command": "artha",
     "separate-locales": false,
     "finish-args": [
@@ -17,17 +17,7 @@
         "/include",
         "/lib/*.a",
         "/lib/*.la",
-        "/lib/pkgconfig",
-        "/lib/debug",
-        "/lib/girepository-1.0",
-        "/share/aclocal",
-        "/share/gir-1.0",
-        "/share/gtk-doc",
-        "/bin/dbus-binding-tool",
-        "/bin/gtk-builder-convert",
-        "/bin/gtk-demo",
-        "/bin/gtk-query-immodules-2.0",
-        "/bin/gtk-update-icon-cache"
+        "/lib/pkgconfig"
     ],
     "modules": [
         {
@@ -58,45 +48,22 @@
                 "cd lib && gcc -I../include -DDEFAULTPATH='\"/app/dict\"' -O2 -std=gnu11 -c binsrch.c morph.c search.c wnglobal.c wnhelp.c wnrtl.c wnutil.c",
                 "cd lib && ar rcs libwordnet.a *.o",
                 "install -Dm644 lib/libwordnet.a /app/lib/libwordnet.a",
-                "install -Dm644 include/wn.h /app/include/wn.h",
+                "install -Dm644 include/wn.h /app/include/wn.h"
+            ]
+        },
+        {
+            "name": "wordnet-dict",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://wordnetcode.princeton.edu/wn3.1.dict.tar.gz",
+                    "sha256": "3f7d8be8ef6ecc7167d39b10d66954ec734280b5bdcd57f7d9eafe429d11c22a"
+                }
+            ],
+            "build-commands": [
                 "install -d /app/dict",
-                "install -m 644 dict/adj.exc dict/adv.exc dict/cntlist dict/cntlist.rev dict/data.adj dict/data.adv dict/data.noun dict/data.verb dict/frames.vrb dict/index.adj dict/index.adv dict/index.noun dict/index.sense dict/index.verb dict/lexnames dict/noun.exc dict/sentidx.vrb dict/sents.vrb dict/verb.Framestext dict/verb.exc dict/log.grind.3.0 /app/dict/"
-            ]
-        },
-        {
-            "name": "dbus-glib",
-            "buildsystem": "autotools",
-            "build-options": {
-                "cflags": "-O2 -std=gnu11"
-            },
-            "sources": [
-                {
-                    "type": "archive",
-                    "url": "https://dbus.freedesktop.org/releases/dbus-glib/dbus-glib-0.112.tar.gz",
-                    "sha256": "7d550dccdfcd286e33895501829ed971eeb65c614e73aadb4a08aeef719b143a"
-                }
-            ],
-            "config-opts": [
-                "--prefix=/app"
-            ]
-        },
-        {
-            "name": "gtk2",
-            "buildsystem": "autotools",
-            "build-options": {
-                "cflags": "-O2 -std=gnu11 -Wno-incompatible-pointer-types -Wno-int-conversion -Wno-implicit-int"
-            },
-            "sources": [
-                {
-                    "type": "archive",
-                    "url": "https://download.gnome.org/sources/gtk+/2.24/gtk+-2.24.33.tar.xz",
-                    "sha256": "ac2ac757f5942d318a311a54b0c80b5ef295f299c2a73c632f6bfb1ff49cc6da"
-                }
-            ],
-            "config-opts": [
-                "--prefix=/app",
-                "--disable-gtk-doc",
-                "--disable-gtktest"
+                "find . -mindepth 1 -maxdepth 1 ! -name dbfiles -exec cp -a {} /app/dict/ \\;"
             ]
         },
         {
@@ -111,10 +78,7 @@
             "build-commands": [
                 "CPATH=/app/include LIBRARY_PATH=/app/lib xmake f --prefix=/app -m release",
                 "CPATH=/app/include LIBRARY_PATH=/app/lib xmake",
-                "CPATH=/app/include LIBRARY_PATH=/app/lib xmake install -o /app",
-                "install -Dm644 /app/share/applications/artha.desktop /app/share/applications/org.artha.Artha.desktop",
-                "sed -i 's/^Icon=artha$/Icon=org.artha.Artha/' /app/share/applications/org.artha.Artha.desktop",
-                "install -Dm644 /app/share/pixmaps/artha.png /app/share/icons/hicolor/128x128/apps/org.artha.Artha.png"
+                "CPATH=/app/include LIBRARY_PATH=/app/lib xmake install -o /app"
             ]
         }
     ]

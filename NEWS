@@ -1,3 +1,73 @@
+Unreleased (Nov 12, 2026)
+	Migration round: latest-major dependencies and the Flatpak target system.
+	- GTK+ 2 -> GTK 4 (4.6 minimum; GNOME 51's GTK 4.24.1 is the reference
+	  environment). APIs deprecated in 4.10 are handled per-API:
+	  GtkMessageDialog -> GtkAlertDialog and GtkFileChooserNative ->
+	  GtkFileDialog are migrated behind GTK_CHECK_VERSION(4, 10, 0), with
+	  the legacy widgets kept on 4.6 (the jammy host build). The
+	  GtkComboBox/GtkTreeView/GtkTreeModel/GtkCellRenderer*/GtkEntryCompletion
+	  stack (including gui.glade) is still called as-is; migrating to the
+	  GtkColumnView/GtkDropDown/GtkStringList successors is a separate,
+	  larger task. GtkCellRendererAccel is not used anywhere.
+	- dbus-glib -> GDBus (part of GLib). The single-instance logic uses a
+	  session-bus name (org.artha.unique) with RequestName; on bus failure
+	  the app degrades to multi-instance with a warning instead of aborting.
+	- System tray: GtkStatusIcon is gone in GTK4; Artha now registers an
+	  org.kde.StatusNotifierItem over raw GDBus on the session bus. On
+	  stock GNOME (no org.kde.StatusNotifierWatcher) there is no tray icon
+	  and the app works regardless. The tray right-click menu (_Hide/_Quit)
+	  was dropped; quit stays available via Ctrl+Q and the toolbar.
+	- Install layout is app-id-named end to end: the desktop file ships as
+	  `org.artha.Artha.desktop` (Icon=org.artha.Artha) and the PNG as
+	  `share/icons/hicolor/128x128/apps/org.artha.Artha.png` alongside
+	  `share/pixmaps/artha.png` (read by the app itself); the AppStream
+	  metainfo declares a matching launchable and a stock icon, so
+	  `appstreamcli compose` accepts the component during the flatpak
+	  build.
+	- WordNet 3.0 -> 3.1 dictionary (the 3.0 dict is no longer installed;
+	  the libwordnet static library is still the 3.0 source, as upstream
+	  ships no 3.1 library). flatpak ships the 3.1 dict set as an overlay
+	  with frames.vrb/lexnames/dbfiles dropped (absent from 3.1).
+	- Hotkey peek: the global hotkey now listens on a dedicated X11
+	  connection with a blocking XNextEvent pump thread, dispatching to GTK
+	  via g_idle_add with an async PRIMARY selection read (gdk_clipboard_
+	  read_text_async). XGetModifierMapping resolves caps/num/scroll lock
+	  masks at runtime. On Wayland (no X11) or when X is unavailable, the
+	  hotkey is silently disabled. The Win32 hotkey receiver (RegisterHotKey
+	  message window) is not yet ported; global hotkeys on Windows are
+	  unavailable in this build. XSynchronize failure no longer calls g_error.
+	- gtk_dialog_run is gone (nested main loops removed): all message
+	  dialogs present non-modally and destroy on "response". On GTK >= 4.10
+	  they are GtkAlertDialog (message = former title, detail = former
+	  body); the file chooser is GtkFileDialog (save) with the same copy
+	  and reporting flow.
+	- Suggestions (dlopen of libenchant): the enchant_dict_free_string_list
+	  fallback now actually probes for the deprecated
+	  enchant_dict_free_suggestions symbol instead of re-probing the
+	  same missing symbol (the fallback was dead code; on hosts with
+	  libenchant < 2.0 suggestions were silently disabled).
+	- GtkStatusbar is gone in GTK4; the status text moved to a plain
+	  GtkLabel in the main window (same messages, same contexts).
+	- Toolbar rebuilt as a GtkBox of buttons (icon names from the freedesktop
+	  spec: go-previous/next-symbolic, view-list-symbolic, preferences-
+	  system(-notifications)-symbolic, help-about-symbolic, application-exit-
+	  symbolic). Ctrl+Q quits; Ctrl+W/Escape hide the window.
+	- The Options dialog is a plain GtkWindow with real Apply/Cancel
+	  callbacks (Hotkey captured on Apply, restored on Cancel).
+	- Text-view click lookup (double-click / Ctrl+release) uses GtkGestureClick
+	  and reads the selected text directly from the buffer (no X11 selection
+	  round-trip).
+	- The history combo's right-click menu moved to a GtkPopoverMenu with
+	  Save History / Clear History GActions (populate-popup is gone in GTK4).
+	- Build minimums: gtk4 >= 4.6, glib-2.0 >= 2.66, gmodule-2.0 >= 2.66.
+	  G_DISABLE_DEPRECATED stays enabled; zero deprecated GLib calls remain.
+	- flatpak: base org.gnome.Platform/Sdk 51; --filesystem=host is never
+	  used; the dep layer (xmake 3.1.2, WordNet 3.0 lib, 3.1 dict) builds
+	  green inside the SDK; artha itself builds green inside the SDK.
+	- Preferences file format unchanged; lookup history unchanged; config
+	  dir is now created if missing (fresh profiles no longer fail to save
+	  preferences).
+
 1.0.5 (Jul 27, 2020)
 	This is purely a maintenance release.  Arch User Repository's artha package discussions showed
 	that Artha has build issues due to newer GCCs.  Similarly Autotool-files needed a bump to newer
