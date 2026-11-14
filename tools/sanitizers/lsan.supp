@@ -1,0 +1,23 @@
+# LeakSanitizer suppression file for Artha.
+#
+# GTK4 and GLib deliberately keep a small number of one-off allocations alive
+# until process exit (theme resources, GSettings backends, GModule handles for
+# libenchant/libnotify, clipboard, etc.). These are not leaks: they are
+# intentionally never freed because the process is terminating. Suppress them
+# here so LSAN (enable_leaks=1) does not fail the ASan lane on expected
+# shutdown activity.
+#
+# Each entry must name the library and (optionally) the function/allocator.
+# Keep entries minimal and justified; do not suppress frames inside src/.
+#
+# Format (LSan):
+#   leak:<function>
+#   leak:<library>:<function>
+#
+# Known one-off GTK/GLib allocations at exit (justified):
+leak:gtk4:gtk_settings_get_default
+leak:gtk4:gtk_icon_theme_get_default
+leak:gtk4:gdk_display_get_default
+leak:glib-2.0:g_module_open
+leak:glib-2.0:g_settings_get
+leak:glib-2.0:g_ptr_array_unref

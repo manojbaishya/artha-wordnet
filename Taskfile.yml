@@ -46,6 +46,17 @@ tasks:
       - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}" --strict=yes'
       - '{{.XMAKE_BIN}}'
 
+  test-asan:
+    desc: Build with clang ASan+UBSan and run unit + integration tests into sandbox/asan
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f -m debug -o sandbox/asan --cc=clang --cxflags="-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -g" --ldflags="-fsanitize=address -fsanitize=undefined"'
+      - '{{.XMAKE_BIN}} build artha-unit-test artha-integration-test'
+      - 'ASAN_OPTIONS=abort_on_error=1:detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 LSAN_OPTIONS=suppressions={{.ROOT}}/tools/sanitizers/lsan.supp G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-unit-test'
+      - 'ASAN_OPTIONS=abort_on_error=1:detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 LSAN_OPTIONS=suppressions={{.ROOT}}/tools/sanitizers/lsan.supp G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-integration-test'
+      - '{{.XMAKE_BIN}} f -o sandbox --prefix="{{.PREFIX}}"'
+
   install:
     desc: Build then stage install into ./sandbox/stage (no system changes)
     deps:
