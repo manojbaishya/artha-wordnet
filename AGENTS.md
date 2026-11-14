@@ -26,6 +26,34 @@ task test-behavioral  # Gherkin + Python behavioural tests (needs Xephyr :94)
 
 `task install` stages into `sandbox/stage` and lays out `bin/artha`, `share/applications/org.artha.Artha.desktop`, `share/artha/gui.glade`, `share/man/man1/artha.1`, `share/pixmaps/artha.png`, `share/icons/hicolor/128x128/apps/org.artha.Artha.png`, `share/metainfo/org.artha.Artha.metainfo.xml`.
 
+### Taskfile recipes
+
+| Recipe | Description |
+|--------|-------------|
+| `task build` | Configure (release) + build into `./sandbox` |
+| `task build-strict` | Build with `--strict=yes` (opt-in stricter warnings) |
+| `task test` | Configure, build, run unit + integration tests |
+| `task test-behavioral` | Gherkin behavioural tests (needs Xephyr `:94`) |
+| `task test-asan` | clang ASan+UBSan build + unit + integration tests |
+| `task valgrind` | Valgrind run of unit + integration + smoke (manual, not CI-gated) |
+| `task coverage` | gcc gcov coverage build + tests + per-file `.gcov` reports |
+| `task format` | Apply clang-format to C/H sources |
+| `task format-check` | Check C/H sources conform to clang-format |
+| `task lint` | clang-tidy over `src/` (excl. `platform/windows/`, `libnotify.c`) |
+| `task lint-shell` | shellcheck on `ci/check.sh`, `tests/smoke/test_smoke.sh` |
+| `task lint-python` | ruff on behavioral + manifest Python files |
+| `task lint-shell-python` | `lint-shell` + `lint-python` together |
+| `task check` | Aggregator: `build` + `format-check` + `lint` + `lint-shell` + `lint-python` + `test` |
+| `task install` | Build + stage install into `./sandbox/stage` |
+| `task run` | Run staged binary from `sandbox/stage/bin/artha` |
+| `task debug` | Debug build with verbose WNI diagnostics |
+| `task rebuild` | Clean then build (release) |
+| `task clean` | Remove build artifacts under `./sandbox` |
+| `task bootstrap-xmake` | Build and cache pinned xmake into `~/.artha-cache/` |
+| `task xmake-ensure` | Ensure pinned xmake is available |
+
+**Compiler choice:** gcc is the default compiler (CI ubuntu-24.04 and the Flatpak GNOME 51 SDK both use gcc). clang 23 is opt-in only, used by the `test-asan` lane via `--cc=clang`. Do not switch the default to clang 23: CI has no clang 23, and the flatpak reference target builds with gcc 14.
+
 ## 3. Dependencies (single source of truth: `deps.json`)
 
 Minimum versions enforced at configure time via read-only `pkg-config --modversion` queries (`pc_minimum`). No xmake package downloads, no installs, no system changes.
@@ -128,9 +156,10 @@ Hierarchical wiki pages: `Home`, `Building`, `Testing`, `Contributing`, `Project
 ## 11. Verification commands (run before declaring done)
 
 ```sh
-task test
-task test-behavioral   # needs Xephyr :94
-python3 tools/gen_flatpak_manifest.py --check
+task check             # build + format-check + lint + lint-shell + lint-python + test
+task test-behavioral   # Gherkin behavioural tests (needs Xephyr :94)
+python3 tools/gen_flatpak_manifest.py --check  # flatpak manifest drift guard
+./ci/check.sh          # full CI gate: build, tests, install, manifest check, smoke
 ```
 
-CI gates: `Host build + smoke (ubuntu-24.04, GTK 4.14)` and `Flatpak build (GNOME 51, GTK 4.24)`.
+CI gates: `Host build + smoke (ubuntu-24.04, GTK 4.14)`, `clang-tidy lint (non-blocking)`, `shellcheck + ruff lint (non-blocking)`, `Flatpak build (GNOME 51, GTK 4.24)`.

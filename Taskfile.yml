@@ -152,3 +152,40 @@ tasks:
       - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
       - '{{.XMAKE_BIN}} project -P {{.ROOT}} -k compile_commands {{.SANDBOX}}'
       - 'clang-tidy -p {{.SANDBOX}} $(find {{.ROOT}}/src -name "*.c" ! -path "{{.ROOT}}/src/platform/windows/*" ! -path "{{.ROOT}}/src/platform/libnotify.c")'
+
+  coverage:
+    desc: Build with gcc gcov coverage instrumentation, run unit + integration tests, emit per-file gcov reports under sandbox/coverage
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f -m debug -o sandbox/coverage --cc=gcc --cxflags="-fprofile-arcs -ftest-coverage" --ldflags="-fprofile-arcs -ftest-coverage"'
+      - '{{.XMAKE_BIN}} build artha-unit-test artha-integration-test'
+      - 'G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-unit-test'
+      - 'G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-integration-test'
+      - 'gcov --object-directory={{.SANDBOX}}/coverage $(find {{.ROOT}}/src -name "*.c" ! -path "{{.ROOT}}/src/platform/windows/*" ! -path "{{.ROOT}}/src/platform/libnotify.c")'
+
+  lint-shell:
+    desc: shellcheck on project-owned shell scripts (ci/check.sh, tests/smoke/test_smoke.sh)
+    cmds:
+      - 'shellcheck {{.ROOT}}/ci/check.sh {{.ROOT}}/tests/smoke/test_smoke.sh'
+
+  lint-python:
+    desc: ruff on project-owned Python files (behavioral runner, steps, manifest generator)
+    cmds:
+      - 'ruff check {{.ROOT}}/tests/behavioral/conftest.py {{.ROOT}}/tests/behavioral/run_tests.py {{.ROOT}}/tests/behavioral/steps/test_steps.py {{.ROOT}}/tools/gen_flatpak_manifest.py'
+
+  lint-shell-python:
+    desc: Run lint-shell + lint-python together (combined shell + Python lint gate)
+    deps:
+      - lint-shell
+      - lint-python
+
+  check:
+    desc: "Aggregator: build + format-check + lint (clang-tidy) + lint-shell + lint-python + test"
+    deps:
+      - build
+      - format-check
+      - lint
+      - lint-shell
+      - lint-python
+      - test
