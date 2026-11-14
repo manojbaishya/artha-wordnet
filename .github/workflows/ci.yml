@@ -90,6 +90,33 @@ jobs:
       - name: Run clang-tidy lint
         run: task lint
 
+  lint-shell-python:
+    name: shellcheck + ruff lint (non-blocking)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck
+
+      - name: Install ruff
+        run: |
+          curl -sSf https://astral.sh/ruff/install.sh | sh -s -- --version 0.17.4
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          ruff --version
+
+      - name: Install go-task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+
+      - name: Run shellcheck + ruff lint
+        run: task lint-shell-python
+
   flatpak-build:
     name: Flatpak build (GNOME 51, GTK 4.24)
     runs-on: ubuntu-latest
