@@ -152,3 +152,14 @@ tasks:
       - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
       - '{{.XMAKE_BIN}} project -P {{.ROOT}} -k compile_commands {{.SANDBOX}}'
       - 'clang-tidy -p {{.SANDBOX}} $(find {{.ROOT}}/src -name "*.c" ! -path "{{.ROOT}}/src/platform/windows/*" ! -path "{{.ROOT}}/src/platform/libnotify.c")'
+
+  coverage:
+    desc: Build with gcc gcov coverage instrumentation, run unit + integration tests, emit per-file gcov reports under sandbox/coverage
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f -m debug -o sandbox/coverage --cc=gcc --cxflags="-fprofile-arcs -ftest-coverage" --ldflags="-fprofile-arcs -ftest-coverage"'
+      - '{{.XMAKE_BIN}} build artha-unit-test artha-integration-test'
+      - 'G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-unit-test'
+      - 'G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-integration-test'
+      - 'gcov --object-directory={{.SANDBOX}}/coverage $(find {{.ROOT}}/src -name "*.c" ! -path "{{.ROOT}}/src/platform/windows/*" ! -path "{{.ROOT}}/src/platform/libnotify.c")'
