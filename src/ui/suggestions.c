@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <gmodule.h>
 #include "suggestions.h"
-#include "wni.h"
+#include "core/wni.h"
 
 #ifdef _WIN32
 #	define ENCHANT_FILE		"libenchant.dll"

@@ -24,8 +24,8 @@
  */
 
 
-#include "mod_notify.h"
-#include "wni.h"
+#include "addons/mod_notify.h"
+#include "core/wni.h"
 #include <gmodule.h>
 #include <stdlib.h>
 

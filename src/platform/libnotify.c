@@ -50,7 +50,7 @@ ________________________________________________
 #include <windows.h>
 
 /* include libnotify functions to be implemented */
-#include "libnotify.h"
+#include "platform/libnotify.h"
 #include <stdlib.h>
 
 /* MSVC below 2010 don't have stdint.h */

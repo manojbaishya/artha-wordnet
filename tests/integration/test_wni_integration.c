@@ -12,7 +12,7 @@
 
 #include <glib.h>
 #include <glib/gtestutils.h>
-#include "wni.h"
+#include "core/wni.h"
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                            */

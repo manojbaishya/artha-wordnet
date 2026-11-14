@@ -31,7 +31,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 
-#include "status_notifier.h"
+#include "platform/status_notifier.h"
 
 #define SNI_BUS_NAME		"org.artha.StatusNotifierItem"
 #define SNI_OBJECT_PATH		"/StatusNotifierItem"

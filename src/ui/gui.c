@@ -23,9 +23,9 @@
  */
 
 
-#include "gui.h"
-#include "status_notifier.h"
-#include "rel_item.h"
+#include "ui/gui.h"
+#include "platform/status_notifier.h"
+#include "ui/rel_item.h"
 #include <stdarg.h>
 
 /* Global variables */

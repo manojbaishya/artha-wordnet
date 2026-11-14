@@ -39,12 +39,12 @@
 #endif
 
 /* custom headers */
-#include "wni.h"
-#include "instance_handler.h"
-#include "status_notifier.h"
-#include "hotkey_editor.h"
-#include "mod_notify.h"
-#include "tomboyutil.h"
+#include "core/wni.h"
+#include "integrations/instance_handler.h"
+#include "platform/status_notifier.h"
+#include "ui/hotkey_editor.h"
+#include "addons/mod_notify.h"
+#include "integrations/tomboyutil.h"
 
 /* GTK4 removed GtkAccelKey (the accel-group subsystem is gone).
    Artha keeps its own hotkey binding type with the same fields;
@@ -57,7 +57,7 @@ typedef struct
 } ArthaAccelKey;
 
 /* pluggable module headers */
-#include "addons.h"
+#include "addons/addons.h"
 
 #ifdef G_OS_WIN32
 #	include <gdk/win32/gdkwin32.h>

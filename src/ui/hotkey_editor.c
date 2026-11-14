@@ -33,7 +33,7 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
-#include "gui.h"
+#include "ui/gui.h"
 
 #define STR_INVALID_HOTKEY "The shortcut \"%s\" cannot be used because \
 it will become impossible to type using this key.\nPlease try with a \

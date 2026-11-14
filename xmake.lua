@@ -255,7 +255,8 @@ end
 target("wni")
     set_kind("static")
     set_default(false) -- private; the archive is only a build intermediate
-    add_files("src/wni.c")
+    add_files("src/core/wni.c")
+    add_includedirs("src") -- so #include "core/wni.h" resolves from any folder
     add_cxflags(common_cxflags)
     add_defines(common_defines)
     on_load(pkgconfig_on_load({
@@ -269,24 +270,25 @@ target("artha")
     set_kind("binary")
     set_default(true)
 
-    add_files("src/gui.c", "src/mod_notify.c",
-              "src/suggestions.c", "src/hotkey_editor.c",
-              "src/status_notifier.c", "src/rel_item.c")
+    add_files("src/ui/gui.c", "src/addons/mod_notify.c",
+              "src/ui/suggestions.c", "src/ui/hotkey_editor.c",
+              "src/platform/status_notifier.c", "src/ui/rel_item.c")
 
     if is_plat("windows") then
-        add_files("src/app_icon.rc")
+        add_files("src/platform/windows/app_icon.rc")
         add_defines("WINVER=0x0501", "_WIN32_WINDOWS=0x0501", "_WIN32_WINNT=0x0501")
         add_cxflags("-mwin32", "-DUNICODE", "-D_UNICODE", "-DNDEBUG")
     else
         -- POSIX-only parts (X11 hotkey grabs, tomboy util, single-instance)
-        add_files("src/tomboyutil.c",
-                  "src/instance_handler.c")
+        add_files("src/integrations/tomboyutil.c",
+                  "src/integrations/instance_handler.c")
     end
 
     add_deps("wni") -- static link of the in-project library
 
     add_cxflags(common_cxflags)
     add_defines(common_defines)
+    add_includedirs("src") -- so #include "core/wni.h", "ui/gui.h", etc. resolve
 
     if is_plat("windows") then
         add_deps("libnotify")
@@ -371,7 +373,7 @@ if is_plat("windows") then
         set_kind("shared")
         set_default(false)
         set_basename("libnotify")
-        add_files("src/libnotify.c")
+        add_files("src/platform/libnotify.c")
         add_cxflags("-Wall", "-Wextra", "-pedantic", "-std=c99",
                     "-Wno-unused-parameter", "-fstrict-aliasing", "-mwin32",
                     "-DUNICODE", "-D_UNICODE", "-DNDEBUG")

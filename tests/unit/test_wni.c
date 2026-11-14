@@ -12,7 +12,7 @@
  */
 
 #define static          /* expose wni.c's static helpers for unit testing */
-#include "wni.c"        /* brings wn.h, wni.h and all of wni.c */
+#include "core/wni.c"        /* brings wn.h, wni.h and all of wni.c */
 
 #include <glib.h>
 #include <glib/gtestutils.h>

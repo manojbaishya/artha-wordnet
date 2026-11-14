@@ -28,7 +28,7 @@
 
 #include <string.h>
 #include <wn.h>
-#include "wni.h"
+#include "core/wni.h"
 
 // WNI Global Variable
 GSList *global_list = NULL;

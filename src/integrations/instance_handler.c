@@ -28,7 +28,7 @@
 #include <gio/gio.h>
 #include <gtk/gtk.h>
 
-#include "tomboyutil.h"
+#include "integrations/tomboyutil.h"
 
 #define STR_UNIQUE_BUS_NAME		"org.artha.unique"
 #define STR_DUPLICATE_OBJECT_PATH	"/org/artha/duplicate"
