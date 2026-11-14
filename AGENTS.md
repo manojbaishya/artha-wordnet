@@ -152,6 +152,7 @@ Hierarchical wiki pages: `Home`, `Building`, `Testing`, `Contributing`, `Project
 6. **No host mutations** — never `~/.config/artha.conf`, never `/usr/local`, never `:0` for GUI tests; use scratch `HOME`/`XDG_*`, Xephyr `:94`; ensure `/usr/bin` on `PATH`.
 7. **Compress context** — put details in files (`SYSTEM_MEMORY.md`, `docs/planning/PROJECT_PLAN.md`); chat carries 10-line distillates.
 8. **Log decisions with COST/EFFORT/RISK/PAYOFF** — whenever a technical or tooling decision is made (e.g. compiler choice, CI lane, dependency pin), record it using a COST/EFFORT/RISK/PAYOFF matrix in simple, accurate technical and economic terms. For each option: state the COST (money, time, compute), EFFORT (person-hours, complexity), RISK (failure chance, blast radius), and PAYOFF (benefit, users affected). Keep it under ~200 words, in plain language that is technically correct but easy to understand. Do not switch defaults without this matrix.
+9. **Project board hygiene** — board #2 (`PVT_kwHOAbBIHs4Bre-u`) must contain only issue-type objects (no Pull Requests). All new tasks and user stories must be nested under feature #3 (`App Modernization`) unless stated explicitly otherwise. PRs are superseded by their merged commits on `main` and are not board items.
 
 ## 11. Verification commands (run before declaring done)
 
