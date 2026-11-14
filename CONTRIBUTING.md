@@ -4,15 +4,18 @@ Thank you for contributing! This document explains how we track work, name issue
 
 ## Issue types
 
-We use GitHub Issues as the unit of work, typed by label:
+We use GitHub Issues as the unit of work, typed by label. Labels sit in this order:
 
 | Label | Meaning | Example |
 |-------|---------|---------|
-| `epic` | Large body of work spanning multiple sprints; has a User Story as parent | `App Modernization` |
-| `user-story` | End-user-facing capability, sized for one sprint | "As a user, I want to search for synonyms" |
+| `epic` | Top-level body of work spanning multiple sprints; parents features/user-stories | `Artha Go-Live` (#7) |
+| `feature` | Large capability, spans sprints; child of an epic | `App Modernization` (#3) |
+| `user-story` | End-user-facing capability, sized for one sprint | "As a user, I want to search for synonyms" (#6) |
 | `bug` | Something broken; regression or defect | "History writes `0x01` instead of the term" |
-| `task` | Engineering work not directly user-facing | "Migrate TreeView to GtkListView" |
+| `task` | Engineering work not directly user-facing | "Migrate TreeView to GtkListView" (#4, #5) |
 | `sub-task` | Step under a parent task/user-story | "Remove `can-focus` from gui.glade containers" |
+
+Issue hierarchy (example): #7 `epic: Artha Go-Live` → #3 `feature: App Modernization` → #4/#5 `task` (closed) + #6 `user-story: test - Test Strategy` (open).
 
 ## Work status (Project board)
 
@@ -31,23 +34,36 @@ Only one issue/PR should be `In Progress` per person at a time.
 
 ## PR naming convention
 
-PR titles carry the task ID so the board and code history stay linked:
+PR titles follow `<TYPE>: <SCOPE> - <TITLE>`:
 
 ```
-TASK-<ID>: - <SCOPE> - <TITLE>
+<type>: <scope> - <title>
 ```
 
-Example: `TASK-4: - build - GTK4 / GDBus / WordNet 3.1 migration + Flatpak GNOME 51 + CI gate`
+`type ∈ {epic, feature, user-story, bug, task, sub-task}`. `scope` is a noun giving context to the affected codebase part (e.g. `build`, `gtk4`, `packaging`, `ci`, `test`). `title` is a concise summary of what changed.
 
-| Part | Meaning |
-|------|---------|
-| `TASK-<ID>` | The Project board task issue number (e.g. `TASK-4` for issue #4) |
-| `<SCOPE>` | A noun giving context to the affected codebase part (e.g. `build`, `gtk4`, `packaging`, `ci`) |
-| `<TITLE>` | Concise summary of what changes were made |
+Example: `task: build - self-contained pinned xmake via versioned cache`
 
 When a PR resolves an issue, include `closes #<issue-number>` or `fixes #<issue-number>` in the PR body so GitHub auto-closes the issue on merge.
 
-The `TASK-ID:` prefix links each PR to its Project board issue and takes precedence.
+## Linking PRs to issues (JOIN key + auto-close)
+
+`.github/workflows/pr-issue-link.yml` runs on every PR open/reopen/sync/close:
+
+- It scans the PR title/body for a JOIN key (`closes`, `fixes`, or `join`, case-insensitive, e.g. `Closes #12`, `Fixes #12`, `Join: #12`) and comments on each linked issue with a pointer back to the PR.
+- When the PR is merged, every linked issue is closed automatically.
+
+So a PR body like `closes #10` both links the PR to issue #10 *and* closes #10 once merged — no manual linkage needed.
+
+## Build (Taskfile)
+
+`Taskfile.yml` is the single entry point for build/install/run. It is self-contained in the maven/uv/pnpm sense:
+
+- xmake is pinned to the versioned reference in `deps.json` (3.1.2) and reused from a shared versioned user cache at `~/.artha-cache/xmake-3.1.2/`. Populate it once with `task bootstrap-xmake`; every build task reuses it via `xmake-ensure`. Nothing is installed to `/usr/local` or `~/.config/artha.conf`.
+- The C compiler/linker and system libraries (gtk4, glib, wordnet, X11) remain platform dependencies located by pkg-config's built-in search path — no distro-specific `PKG_CONFIG_PATH` is hardcoded.
+- On hosts where linuxbrew shadows the system toolchain, run builds with `PATH=/usr/bin:$PATH task <recipe>` (the host toolchain must win).
+
+Recipes: `build`, `install`, `run`, `debug`, `rebuild`, `clean`, `default`. Artifacts stay under the gitignored `sandbox/`; `task install` stages into `sandbox/stage` (no system changes).
 
 ## Submitting a PR
 
