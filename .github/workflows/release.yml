@@ -41,6 +41,8 @@ jobs:
           open("/tmp/xmake", "wb").write(body)
           PY
           sudo install -m 0755 /tmp/xmake /usr/local/bin/xmake
+          mkdir -p "$HOME/.artha-cache/xmake-3.1.2/bin"
+          install -m 0755 /tmp/xmake "$HOME/.artha-cache/xmake-3.1.2/bin/xmake"
           xmake --version
 
       - name: Install go-task
@@ -111,11 +113,11 @@ jobs:
       - name: Build Flatpak bundle
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          rm -rf /tmp/fb-out
+          rm -rf /tmp/fb-out /tmp/fb-repo
           flatpak-builder --disable-rofiles-fuse \
-            --state-dir="$HOME/.cache/fb-state" --force-clean \
+            --repo=/tmp/fb-repo --state-dir="$HOME/.cache/fb-state" --force-clean \
             /tmp/fb-out flatpak/org.artha.Artha.json
-          flatpak build-bundle /tmp/fb-out org.artha.Artha.flatpak org.artha.Artha
+          flatpak build-bundle /tmp/fb-repo org.artha.Artha.flatpak org.artha.Artha master
           ls -la org.artha.Artha.flatpak
 
       - name: Upload Flatpak bundle
@@ -166,12 +168,11 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
           TAG=v${VERSION}
-          ARGS="--title \"Artha ${VERSION}\" --notes \"Artha ${VERSION} release\""
+          ARGS=(--title "Artha ${VERSION}" --notes "Artha ${VERSION} release")
           if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
-            ARGS="$ARGS --prerelease"
+            ARGS+=('--prerelease')
           fi
-          # shellcheck disable=SC2086
-          gh release create "$TAG" $ARGS \
+          gh release create "$TAG" "${ARGS[@]}" \
             source-artifacts/artha-${VERSION}.tar.gz \
             source-artifacts/artha-${VERSION}.tar.gz.sha256 \
             flatpak-bundle/org.artha.Artha.flatpak

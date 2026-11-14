@@ -152,6 +152,7 @@ Hierarchical wiki pages: `Home`, `Building`, `Testing`, `Contributing`, `Project
 6. **No host mutations** — never `~/.config/artha.conf`, never `/usr/local`, never `:0` for GUI tests; use scratch `HOME`/`XDG_*`, Xephyr `:94`; ensure `/usr/bin` on `PATH`.
 7. **Compress context** — put details in files (`SYSTEM_MEMORY.md`, `docs/planning/PROJECT_PLAN.md`); chat carries 10-line distillates.
 8. **Log decisions with COST/EFFORT/RISK/PAYOFF** — whenever a technical or tooling decision is made (e.g. compiler choice, CI lane, dependency pin), record it using a COST/EFFORT/RISK/PAYOFF matrix in simple, accurate technical and economic terms. For each option: state the COST (money, time, compute), EFFORT (person-hours, complexity), RISK (failure chance, blast radius), and PAYOFF (benefit, users affected). Keep it under ~200 words, in plain language that is technically correct but easy to understand. Do not switch defaults without this matrix.
+9. **Project board hygiene** — board #2 (`PVT_kwHOAbBIHs4Bre-u`) must contain only issue-type objects (no Pull Requests). All new tasks and user stories must be nested under feature #3 (`App Modernization`) unless stated explicitly otherwise. PRs are superseded by their merged commits on `main` and are not board items.
 
 ## 11. Verification commands (run before declaring done)
 
@@ -163,3 +164,35 @@ python3 tools/gen_flatpak_manifest.py --check  # flatpak manifest drift guard
 ```
 
 CI gates: `Host build + smoke (ubuntu-24.04, GTK 4.14)`, `clang-tidy lint (non-blocking)`, `shellcheck + ruff lint (non-blocking)`, `Flatpak build (GNOME 51, GTK 4.24)`.
+
+## 12. Release artifacts (GitHub Release)
+
+Release artifacts are produced by `.github/workflows/release.yml`, triggered on push of tags matching `v*`:
+
+1. **Tag push** — push a tag `vX.Y.Z` (e.g. `v1.1.0-rc1`) to trigger the workflow.
+2. **Build + stage** — xmake release build, `task install` into `sandbox/stage`, unit + integration tests run.
+3. **Source tarball + sha256** — `artha-X.Y.Z.tar.gz` of `sandbox/stage` + `.sha256` checksum, uploaded as release asset.
+4. **Flatpak bundle** — built with flatpak-builder (GNOME 51), `org.artha.Artha.flatpak` uploaded as release asset.
+5. **GitHub Release** — created via `gh release create`, marked `prerelease` when the tag contains `-rc`, `-beta`, or `-alpha`; release notes auto-generated.
+
+### Release cycle (GitFlow-Lite)
+
+```
+main --(cut)--> release/v-Y26.M11.W{n}
+                  |  stabilise via PRs
+                  v
+              main --(merge commit)--> tag vX.Y.Z --> release.yml --> GitHub Release
+```
+
+- `release/v-*` branches are protected: PR-required, CI status checks must pass.
+- Squash-merge feature branches; merge commits for PRs into `main`.
+- Tag only on `main` after the release branch is merged back.
+- Pre-release tags (`-rc`, `-beta`, `-alpha`) mark the GitHub Release as a pre-release.
+
+### Dry-run
+
+Before a real release, test `release.yml` on a throwaway tag (e.g. `v0.0.1-smoke`), verify assets upload, then delete the tag and release.
+
+### Version single source of truth
+
+`xmake.lua` `set_version()` and the `ARTHA_VERSION` define are the single source of truth. No duplicated version strings across build/CI/packaging. Historical entries (NEWS, ChangeLog, metainfo `<release>`) document past releases and are not updated.
