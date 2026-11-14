@@ -20,20 +20,18 @@ jobs:
           fetch-depth: 0
 
       - name: Clone the wiki repo
-        id: wiki-clone
         run: |
-          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" /tmp/opencode/artha-wiki
-          echo "wiki_dir=/tmp/opencode/artha-wiki" >> $GITHUB_OUTPUT
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" /tmp/artha-wiki
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Copy README.md into wiki Home.md
         run: |
-          cp README.md /tmp/opencode/artha-wiki/Home.md
+          cp README.md /tmp/artha-wiki/Home.md
 
       - name: Commit and push wiki Home.md
         run: |
-          cd /tmp/opencode/artha-wiki
+          cd /tmp/artha-wiki
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git diff --quiet --exit-code Home.md; then
@@ -41,7 +39,7 @@ jobs:
             exit 0
           fi
           git add Home.md
-          git commit -m "docs: sync wiki Home from README.md ($(git -C /home/manoj/Code/artha/artha-1.0.5 log -1 --format=%h))"
-          git push origin main
+          git commit -m "docs: sync wiki Home from README.md ($(git -C "$GITHUB_WORKSPACE" log -1 --format=%h))"
+          git push origin master
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
