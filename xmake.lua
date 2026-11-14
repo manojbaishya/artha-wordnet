@@ -68,6 +68,12 @@ option("debug")
     set_values("no", "yes", "messages", "verbose")
     set_description("Debug output level (no|yes|messages|verbose -> DEBUG_LEVEL 0|1|2|3)")
 
+option("strict")
+    set_default("no")
+    set_showmenu(true)
+    set_values("no", "yes", "werror")
+    set_description("Strict warnings (no|yes|werror). Off by default so distro builds are not broken. 'werror' also adds -Werror.")
+
 -- NB: during the very first `xmake f`, get_config() may not see the
 -- cached option yet; fall back to the option's default.
 local prefix = get_config("prefix") or "/usr/local"
@@ -84,6 +90,24 @@ local common_cxflags = {
     "-fstrict-aliasing",
     "-Wno-missing-field-initializers",
 }
+
+-- Strict warnings (opt-in via xmake f --strict=yes|werror). Off by default
+-- so distro builds are not broken. 'werror' additionally promotes warnings
+-- to errors. GTK/GLib system headers may emit warnings; those come from
+-- system include paths and are not fixed here (file bug issues instead).
+local strict = get_config("strict")
+if strict and strict ~= "no" then
+    table.insert(common_cxflags, "-Wshadow")
+    table.insert(common_cxflags, "-Wformat=2")
+    table.insert(common_cxflags, "-Wstrict-prototypes")
+    table.insert(common_cxflags, "-Wmissing-prototypes")
+    table.insert(common_cxflags, "-Wold-style-definition")
+    table.insert(common_cxflags, "-Wvla")
+    table.insert(common_cxflags, "-Wcast-align")
+    if strict == "werror" then
+        table.insert(common_cxflags, "-Werror")
+    end
+end
 
 local common_defines = {
     -- (GTK_DISABLE_DEPRECATED/GDK_DISABLE_DEPRECATED are no-ops in GTK4)

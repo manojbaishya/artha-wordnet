@@ -63,4 +63,9 @@ char* (*enchant_broker_get_error)(EnchantBroker* broker) = NULL;
 
 G_END_DECLS
 
+// Project API
+GSList* suggestions_get(const gchar* lemma);
+gboolean suggestions_init(void);
+gboolean suggestions_uninit(void);
+
 #endif /* __SUGGESTIONS_H__ */

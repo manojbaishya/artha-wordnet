@@ -38,6 +38,14 @@ tasks:
       - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
       - '{{.XMAKE_BIN}}'
 
+  build-strict:
+    desc: Configure + build with strict warnings (opt-in; does not break distro builds)
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}" --strict=yes'
+      - '{{.XMAKE_BIN}}'
+
   install:
     desc: Build then stage install into ./sandbox/stage (no system changes)
     deps:
