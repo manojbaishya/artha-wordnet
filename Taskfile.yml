@@ -57,6 +57,18 @@ tasks:
       - 'ASAN_OPTIONS=abort_on_error=1:detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 LSAN_OPTIONS=suppressions={{.ROOT}}/tools/sanitizers/lsan.supp G_SLICE=always-malloc {{.XMAKE_BIN}} run artha-integration-test'
       - '{{.XMAKE_BIN}} f -o sandbox --prefix="{{.PREFIX}}"'
 
+  valgrind:
+    desc: Run unit + integration tests and smoke under Valgrind (manual/scheduled; not CI-gated)
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}} build artha-unit-test artha-integration-test'
+      - 'SUPP_ARGS=""; for s in /usr/share/glib-2.0/valgrind/glib.supp /usr/share/gtk-4.0/valgrind/gtk.supp {{.ROOT}}/tools/valgrind/artha.supp; do [ -f "$s" ] && SUPP_ARGS="$SUPP_ARGS --suppressions=$s" || echo "valgrind: skipping missing suppression $s"; done; G_SLICE=always-malloc G_DEBUG=resident-modules valgrind --leak-check=full --error-exitcode=1 --num-callers=20 $SUPP_ARGS {{.XMAKE_BIN}} run artha-unit-test'
+      - 'SUPP_ARGS=""; for s in /usr/share/glib-2.0/valgrind/glib.supp /usr/share/gtk-4.0/valgrind/gtk.supp {{.ROOT}}/tools/valgrind/artha.supp; do [ -f "$s" ] && SUPP_ARGS="$SUPP_ARGS --suppressions=$s" || echo "valgrind: skipping missing suppression $s"; done; G_SLICE=always-malloc G_DEBUG=resident-modules valgrind --leak-check=full --error-exitcode=1 --num-callers=20 $SUPP_ARGS {{.XMAKE_BIN}} run artha-integration-test'
+      - '{{.XMAKE_BIN}} install -o "{{.STAGE}}"'
+      - 'SUPP_ARGS=""; for s in /usr/share/glib-2.0/valgrind/glib.supp /usr/share/gtk-4.0/valgrind/gtk.supp {{.ROOT}}/tools/valgrind/artha.supp; do [ -f "$s" ] && SUPP_ARGS="$SUPP_ARGS --suppressions=$s" || echo "valgrind: skipping missing suppression $s"; done; G_SLICE=always-malloc G_DEBUG=resident-modules valgrind --leak-check=full --error-exitcode=1 --num-callers=20 $SUPP_ARGS {{.STAGE}}/bin/artha'
+
   install:
     desc: Build then stage install into ./sandbox/stage (no system changes)
     deps:

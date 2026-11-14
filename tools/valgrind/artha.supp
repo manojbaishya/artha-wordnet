@@ -1,0 +1,24 @@
+# Valgrind suppression file for Artha.
+#
+# Suppressions for known-false-positive or expected-allocations-alive-at-exit
+# that are not Artha memory bugs. Each entry is justified with a comment.
+# Do not suppress frames inside src/ (those are real Artha leaks to fix).
+#
+# Format (Valgrind memcheck):
+#   {
+#      <name>
+#      Memcheck:Leak
+#      match-leak-kinds: definite
+#      fun:...
+#   }
+#
+# GLib/GTK one-off allocations alive at process exit (intentionally not freed
+# because the process is terminating). G_SLICE=always-malloc is set for the
+# valgrind runs so these are visible to Memcheck.
+{
+   glib_gtk_exit_allocation
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:g_malloc
+   fun:g_slice_alloc
+}
