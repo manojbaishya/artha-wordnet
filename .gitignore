@@ -19,3 +19,7 @@
 /.codex/
 # local agent scratch (worktrees, plans) — not for the public repo
 /.opencode/
+
+# Python test artifacts
+/__pycache__/
+/tests/**/__pycache__/
