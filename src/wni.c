@@ -1506,6 +1506,24 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 
 
 /*
+	NULL-safe, case-insensitive comparison of two strings.
+	Completes the wni_strcmp0 API declared in wni.h.
+	Returns <0, 0, >0 like strcmp; a NULL pointer sorts before any non-NULL string.
+*/
+
+int wni_strcmp0(const char *s1, const char *s2)
+{
+	if(s1 == s2)			/* both NULL, or same pointer */
+		return 0;
+	if(!s1)
+		return -1;
+	if(!s2)
+		return 1;
+	return g_ascii_strcasecmp(s1, s2);
+}
+
+
+/*
 	A simple list whose data part doesn't have any further links and is terminal, can be freed 
 	using this function. For debugging purposes, the second argument (mode) was introduced. It sets the 
 	mode to prints a synonym mapping, antonym mapping or a string. It is also used for freeing the memory back to slice alloc.

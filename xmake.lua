@@ -323,6 +323,47 @@ target("artha")
     end
 
 -- ---------------------------------------------------------------------
+-- artha-unit-test: GLib GTest unit tests (pure logic, no WordNet DB / GUI).
+--
+-- Compiles tests/unit/test_wni.c which #includes src/wni.c with `static`
+-- stripped, so static helpers (strip_adj_marker) are visible. wni_strcmp0
+-- (added to src/wni.c) is exercised through the same translation unit.
+-- Links glib + wordnet (wni.c's non-tested functions reference wn symbols
+-- at link time even though the tests never call them).
+-- ---------------------------------------------------------------------
+target("artha-unit-test")
+    set_kind("binary")
+    set_default(false)
+    add_files("tests/unit/test_wni.c")
+    add_includedirs("src")
+    add_cxflags(common_cxflags)
+    add_defines(common_defines)
+    -- test file #includes src/wni.c directly; do NOT add_deps("wni") to
+    -- avoid duplicate symbols. Link glib + wordnet directly instead.
+    on_load(pkgconfig_on_load({
+        packages = {"glib-2.0"},
+    }))
+    add_syslinks("wordnet")
+
+-- ---------------------------------------------------------------------
+-- artha-integration-test: GLib GTest integration tests against real
+-- WordNet database files + temp files + a GLib main loop. Exercises
+-- wni_request_nyms() / wni_free() through the public API.
+-- ---------------------------------------------------------------------
+target("artha-integration-test")
+    set_kind("binary")
+    set_default(false)
+    add_files("tests/integration/test_wni_integration.c")
+    add_includedirs("src")
+    add_cxflags(common_cxflags)
+    add_defines(common_defines)
+    add_deps("wni")
+    on_load(posix_on_load({
+        packages = {"glib-2.0", "gmodule-2.0"},
+    }))
+    add_syslinks("X11")
+
+-- ---------------------------------------------------------------------
 -- Windows-only: vendored win32 libnotify (shared DLL)
 -- ---------------------------------------------------------------------
 if is_plat("windows") then

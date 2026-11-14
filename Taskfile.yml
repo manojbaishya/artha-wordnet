@@ -76,6 +76,23 @@ tasks:
     cmds:
       - '{{.XMAKE_BIN}} -c'
 
+  test:
+    desc: Configure, build, then run unit + integration tests
+    deps:
+      - xmake-ensure
+    cmds:
+      - '{{.XMAKE_BIN}} f --prefix="{{.PREFIX}}"'
+      - '{{.XMAKE_BIN}}'
+      - '{{.XMAKE_BIN}} run artha-unit-test'
+      - '{{.XMAKE_BIN}} run artha-integration-test'
+
+  test-behavioral:
+    desc: Run behavioural (app + UI) Gherkin scenarios (needs Xephyr :94; :0 is read-only)
+    deps:
+      - xmake-ensure
+    cmds:
+      - 'python3 tests/behavioral/run_tests.py tests/behavioral/features/artha.feature'
+
   bootstrap-xmake:
     desc: Build and cache pinned xmake {{.XMAKE_VERSION}} into {{.XMAKE_DIR}} (shared user cache, versioned)
     cmds:
