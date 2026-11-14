@@ -17,7 +17,6 @@
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 /*
  * StatusNotifierItem (SNI) implementation over raw GDBus.
  *
@@ -48,9 +47,8 @@ typedef void (*StatusNotifierActivateCallback)(gpointer user_data);
  * no watcher exists (stock GNOME) or an error occurred. No tray is
  * ever a hard failure.
  */
-gboolean status_notifier_setup(const gchar *icon_file,
-				    StatusNotifierActivateCallback activate_cb,
-				    gpointer user_data);
+gboolean status_notifier_setup(const gchar* icon_file, StatusNotifierActivateCallback activate_cb,
+                               gpointer user_data);
 
 /* Show/hide the item by toggling the SNI "Status" property. */
 void status_notifier_set_visible(gboolean visible);
@@ -58,4 +56,4 @@ void status_notifier_set_visible(gboolean visible);
 /* Unregister the item from the bus. Safe to call when never set up. */
 void status_notifier_cleanup(void);
 
-#endif		/* STATUS_NOTIFIER_H */
+#endif /* STATUS_NOTIFIER_H */

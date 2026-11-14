@@ -1,4 +1,4 @@
-/* hotkey_editor.h
+/* instance_handler.h
  * Artha - Free cross-platform open thesaurus
  * Copyright (c) 2009 Sundaram Ramaswamy, legends2k@yahoo.com
  *
@@ -13,26 +13,25 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 /*
- * Header that exposes hotkey_editor's functions
+ * Header that exposes instance_handler's functions
  */
 
-
-#ifndef __HOTKEY_EDITOR_H__
-#define __HOTKEY_EDITOR_H__
+#ifndef __INSTANCE_HANDLER_H__
+#define __INSTANCE_HANDLER_H__
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-GtkWidget* create_hotkey_editor(void);
+gboolean instance_handler_am_i_unique(void);
+void instance_handler_send_signal(void);
+gboolean instance_handler_register_signal(GtkWindow* window);
 
 G_END_DECLS
 
-#endif		/* __HOTKEY_EDITOR_H__ */
-
+#endif /* __INSTANCE_HANDLER_H__ */

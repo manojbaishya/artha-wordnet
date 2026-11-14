@@ -38,7 +38,7 @@ All build artifacts stay inside the gitignored `sandbox/` directory. On hosts
 where a shadowing toolchain (e.g. linuxbrew) precedes the system one in
 `PATH`, ensure `/usr/bin` precedes it on `PATH` before running builds.
 
-See `BUILDING.md` for full build, install, and flatpak instructions.
+See `docs/BUILDING.md` for full build, install, and flatpak instructions.
 
 ### Quick start
 
@@ -103,7 +103,7 @@ Hierarchical project documentation lives on the
 [GitHub Wiki](https://github.com/manojbaishya/artha-wordnet/wiki):
 
 * **Home** — this README (kept in sync automatically via GitHub Action)
-* **Building** — build, install, flatpak, host quirks (`BUILDING.md`)
+* **Building** — build, install, flatpak, host quirks (`docs/BUILDING.md`)
 * **Testing** — test pyramid, unit/integration/behavioural layers
 * **Contributing** — issue types, board status, PR naming, merge policy
 * **Project Plan** — requirement → issue hierarchy mapping

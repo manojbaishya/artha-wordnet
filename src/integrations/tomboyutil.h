@@ -1,4 +1,4 @@
-/* addons.h
+/* tomboyutil.h
  * Artha - Free cross-platform open thesaurus
  * Copyright (c) 2009 Sundaram Ramaswamy, legends2k@yahoo.com
  *
@@ -13,36 +13,31 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
- 
 /*
- * Modules that are looked up at run time for additional features
- * by Artha (plugins) will have function prototypes here.
+ * gtk_window_present function doesn't always present the window to the
+ * user; hence libtomboy's tomboy_window_present_hardcore function is
+ * used with minor modifications.
+ *
+ * Credit for this code goes fully to Alex Graveley, alex@beatniksoftware.com
  */
 
- 
-#ifndef __ADDONS_H__
-#define __ADDONS_H__
+#ifndef __TOMBOY_UTIL_H__
+#define __TOMBOY_UTIL_H__
 
-#include <glib.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-/* Exposed functions of the 'Suggestions' module */
+gint tomboy_window_get_workspace(GtkWindow* window);
 
-gboolean 	suggestions_init();
-GSList*		suggestions_get(const gchar* lemma);
-gboolean 	suggestions_uninit();
+void tomboy_window_move_to_current_workspace(GtkWindow* window);
 
-
-/* Exposed functions of 'Notify' module */
-gboolean	mod_notify_init();
-gboolean	mod_notify_uninit();
+void tomboy_window_present_hardcore(GtkWindow* window);
 
 G_END_DECLS
 
-#endif		/* __ADDONS_H__ */
-
+#endif /* __TOMBOY_UTIL_H__ */

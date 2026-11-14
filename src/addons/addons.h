@@ -1,4 +1,4 @@
-/* instance_handler.h
+/* addons.h
  * Artha - Free cross-platform open thesaurus
  * Copyright (c) 2009 Sundaram Ramaswamy, legends2k@yahoo.com
  *
@@ -13,28 +13,32 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 /*
- * Header that exposes instance_handler's functions
+ * Modules that are looked up at run time for additional features
+ * by Artha (plugins) will have function prototypes here.
  */
 
+#ifndef __ADDONS_H__
+#define __ADDONS_H__
 
-#ifndef __INSTANCE_HANDLER_H__
-#define __INSTANCE_HANDLER_H__
-
-#include <gtk/gtk.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
-gboolean instance_handler_am_i_unique(void);
-void instance_handler_send_signal(void);
-gboolean instance_handler_register_signal(GtkWindow *window);
+/* Exposed functions of the 'Suggestions' module */
+
+gboolean suggestions_init();
+GSList* suggestions_get(const gchar* lemma);
+gboolean suggestions_uninit();
+
+/* Exposed functions of 'Notify' module */
+gboolean mod_notify_init();
+gboolean mod_notify_uninit();
 
 G_END_DECLS
 
-#endif		/* __INSTANCE_HANDLER_H__ */
-
+#endif /* __ADDONS_H__ */

@@ -2,7 +2,7 @@
 
 Step definitions for the behavioural (app + UI) layer.
 Drives the real artha binary end-to-end on a scratch HOME / XDG_* dir
-and an X display, mirroring tests/test_smoke.sh.
+and an X display, mirroring tests/smoke/test_smoke.sh.
 
 No third-party Python packages are required: this module is executed by
 tests/behavioral/run_tests.py (a dependency-free Gherkin runner). When
@@ -54,7 +54,7 @@ def _find_binary() -> str:
 
 
 def _env(scratch: Path) -> dict:
-    """Build the scratch environment (same contract as tests/test_smoke.sh)."""
+    """Build the scratch environment (same contract as tests/smoke/test_smoke.sh)."""
     env = os.environ.copy()
     env["HOME"] = str(scratch / "home")
     env["XDG_CONFIG_HOME"] = str(scratch / "config")
@@ -154,9 +154,9 @@ def step_stays_running_2s():
     proc = _CTX.get("proc")
     assert proc is not None, "artha was not launched"
     time.sleep(2)
-    assert proc.poll() is None, (
-        f"artha exited early (code {proc.returncode}); see {_CTX['log']}"
-    )
+    assert (
+        proc.poll() is None
+    ), f"artha exited early (code {proc.returncode}); see {_CTX['log']}"
 
 
 def step_writes_preferences():
