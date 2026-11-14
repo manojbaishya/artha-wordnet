@@ -179,3 +179,13 @@ tasks:
     deps:
       - lint-shell
       - lint-python
+
+  check:
+    desc: "Aggregator: build + format-check + lint (clang-tidy) + lint-shell + lint-python + test"
+    deps:
+      - build
+      - format-check
+      - lint
+      - lint-shell
+      - lint-python
+      - test
