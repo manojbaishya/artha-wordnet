@@ -54,6 +54,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config python3 curl ca-certificates \
+            libgtk-4-dev libglib2.0-dev libx11-dev \
+            wordnet wordnet-dev
+
       - name: Install clang-tidy
         run: |
           sudo apt-get update
