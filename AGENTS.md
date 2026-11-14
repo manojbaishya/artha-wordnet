@@ -6,7 +6,7 @@ This file is the project-wide operating manual for any agent (or agent swarm) wo
 
 * **Artha** — an open cross-platform thesaurus based on WordNet, written in pure C using GTK4 and GLib.
 * Homepage: https://artha.sourceforge.net/ | Source: https://github.com/manojbaishya/artha-wordnet | Wiki: https://github.com/manojbaishya/artha-wordnet/wiki
-* License: GNU GPL v2 or later (`COPYING`).
+* License: GNU GPL v2 or later (`LICENSE`).
 
 ## 2. Build system — read-only, self-contained, no system changes
 
