@@ -46,6 +46,50 @@ jobs:
       - name: Build, manifest drift check, smoke test
         run: ./ci/check.sh
 
+  lint:
+    name: clang-tidy lint (non-blocking)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config python3 curl ca-certificates \
+            libgtk-4-dev libglib2.0-dev libx11-dev \
+            wordnet wordnet-dev
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-tidy
+
+      - name: Install pinned xmake from deps.json
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, urllib.request
+          tool = json.load(open("deps.json"))["build_tool"]["xmake"]
+          body = urllib.request.urlopen(tool["url"]).read()
+          digest = hashlib.sha256(body).hexdigest()
+          if digest != tool["sha256"]:
+              raise SystemExit(f"xmake sha256 mismatch: {digest} != {tool['sha256']}")
+          open("/tmp/xmake", "wb").write(body)
+          PY
+          sudo install -m 0755 /tmp/xmake /usr/local/bin/xmake
+          mkdir -p "$HOME/.artha-cache/xmake-3.1.2/bin"
+          install -m 0755 /tmp/xmake "$HOME/.artha-cache/xmake-3.1.2/bin/xmake"
+
+      - name: Install go-task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+
+      - name: Run clang-tidy lint
+        run: task lint
+
   flatpak-build:
     name: Flatpak build (GNOME 51, GTK 4.24)
     runs-on: ubuntu-latest
