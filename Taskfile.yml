@@ -69,6 +69,18 @@ tasks:
       - '{{.XMAKE_BIN}} install -o "{{.STAGE}}"'
       - 'SUPP_ARGS=""; for s in /usr/share/glib-2.0/valgrind/glib.supp /usr/share/gtk-4.0/valgrind/gtk.supp {{.ROOT}}/tools/valgrind/artha.supp; do [ -f "$s" ] && SUPP_ARGS="$SUPP_ARGS --suppressions=$s" || echo "valgrind: skipping missing suppression $s"; done; G_SLICE=always-malloc G_DEBUG=resident-modules valgrind --leak-check=full --error-exitcode=1 --num-callers=20 $SUPP_ARGS {{.STAGE}}/bin/artha'
 
+  test-asan-docker:
+    desc: Run ASan lane inside ubuntu:24.04 container (CI-matching glib 2.74, no host mutation)
+    cmds:
+      - 'docker build -t artha-ci -f Dockerfile.ci .'
+      - 'docker run --rm -v "{{.ROOT}}:/artha" -v "$HOME/.artha-cache:/root/.artha-cache" -w /artha artha-ci /artha/tools/ci-asn.sh'
+
+  valgrind-docker:
+    desc: Run Valgrind lane inside ubuntu:24.04 container (libc6-dbg for ld.so, no host mutation)
+    cmds:
+      - 'docker build -t artha-ci -f Dockerfile.ci .'
+      - 'docker run --rm -v "{{.ROOT}}:/artha" -v "$HOME/.artha-cache:/root/.artha-cache" -w /artha artha-ci /artha/tools/ci-valgrind.sh'
+
   install:
     desc: Build then stage install into ./sandbox/stage (no system changes)
     deps:

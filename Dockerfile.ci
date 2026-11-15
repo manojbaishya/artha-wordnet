@@ -1,0 +1,44 @@
+# Dockerfile.ci — ubuntu:24.04 mirroring CI (GTK 4.14, glib 2.74)
+# Runs Artha's ASan and Valgrind lanes inside a container so the host
+# is never mutated (ground rule 8: no system packages, no ~/.config).
+#
+# Build:
+#   docker build -t artha-ci -f Dockerfile.ci .
+#
+# Run ASan lane:
+#   docker run --rm -v "$(pwd):/artha" -v "$HOME/.artha-cache:/root/.artha-cache" -w /artha artha-ci /artha/tools/ci-asn.sh
+#
+# Run Valgrind lane:
+#   docker run --rm -v "$(pwd):/artha" -v "$HOME/.artha-cache:/root/.artha-cache" -w /artha artha-ci /artha/tools/ci-valgrind.sh
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Build deps for Artha + ASan lane (clang) + Valgrind lane (valgrind + glibc debuginfo)
+# All pinned to ubuntu:24.04 package versions — matches CI's glib 2.74 / GTK 4.14.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        clang \
+        libgtk-4-dev \
+        libglib2.0-dev \
+        libx11-dev \
+        wordnet-dev \
+        valgrind \
+        libc6-dbg \
+        pkg-config \
+        git \
+        curl \
+        ca-certificates \
+        xz-utils \
+        python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /artha
+
+# Go-task is not available in ubuntu:24.04 repos; install the binary directly.
+RUN ARCH="$(dpkg --print-architecture)" && \
+    curl -fsSL "https://github.com/go-task/task/releases/download/v3.36.0/task_linux_${ARCH}.tar.gz" \
+        -o /tmp/task.tar.gz && \
+    tar -xzf /tmp/task.tar.gz -C /usr/local/bin && \
+    rm -f /tmp/task.tar.gz
