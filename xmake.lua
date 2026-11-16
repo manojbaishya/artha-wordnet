@@ -42,7 +42,7 @@
 -- that is built and tested.
 
 set_project("artha")
-set_version("1.1.0-rc1")
+set_version("1.1.0")
 set_description("A cross-platform open-source thesaurus based on WordNet")
 set_license("GPL-2.0-or-later")
 set_xmakever("3.0.0")
