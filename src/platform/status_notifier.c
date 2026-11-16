@@ -281,7 +281,7 @@ gboolean status_notifier_setup(const gchar* icon_file, StatusNotifierActivateCal
     } else {
         /* No watcher running (stock GNOME): the application works,
            the tray icon is simply absent. */
-        g_warning("StatusNotifierWatcher not available (%s); no tray icon",
+        g_message("StatusNotifierWatcher not available (%s); no tray icon",
                   err != NULL ? err->message : "unknown error");
         g_clear_error(&err);
         g_dbus_connection_unregister_object(sni_bus, sni_registration_id);
